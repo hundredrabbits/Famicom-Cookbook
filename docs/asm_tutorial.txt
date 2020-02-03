@@ -1,0 +1,1951 @@
+NES ASM Tutorial
+
+This tutorial is about coding for the Nintendo Entertainment System using
+the NESASM Assembler. The tutorial is designed to go slow and make it easier to learn NES assembly. You ALMOST ABSOLUTELY need to know another assembly language before you attempt this as it does assume certain small (tiny) amount of basic assembly knowledge. Such as knowing GBA or Intel x86 assembly will be a big help in understanding the basics.
+
+Good luck with your NES assembly programming journey!
+
+Day 1      - Beginning NES Assembly
+Day 2      - A Source Code File's Structure
+Day 3      - About NES Programming
+Day 4      - Making And Loading A Pallete
+Day 5      - Displaying A Sprite
+Day 6      - Jumps And Key Presses
+Day 7      - Using Memory
+Day 8      - Comparing Stuff
+Day 9      - A Moving Sprite Program
+Day 10     - Sprite DMA
+Day 11     - The JSR Instruction
+Day 12     - VBlank And Interrupts
+Day 13     - Backgrounds
+Day 14     - Sound Channels 1-3
+Day 15     - The Noise Channel
+Day 16     - Bit Masking/Toggling
+Day 17     - The Sprite Attribute Byte
+Day 18     - BG Scrolling
+Day 19     - Easy Large Loads
+
+Day 1 - Beginning NES Assembly
+
+About NES Assembly 
+
+  Oh, my, GOD! You are actually planning to learn to program the NES in assembly? Well, if you really want to, this hopefully will help. Maybe you've read my ongoing series about GameBoy Advanced Assembly. In my GBA assembly tutorial, it says that you should know GBA programming in C first, before you attempt assembly. I'd say the same about NES assembly, except there aren't any good C compilers targetting the NES's CPU. So I'm just going to say now, either know GBA assembly or Intel x86 assembly BEFORE you attempt to write code for the NES as coding for the NES is a little more difficult than either of the others mentioned.
+
+  We will be using NESASM.exe as our assembler. Get it here! and unzip
+it to C:\nesasm or whereever you want. Good. It also contains serveral other programs we will be using. But before we get coding, we need to know about our little old (REALLY old) friend the Nintendo Entertainment System (NES).
+
+About The NES
+
+  The NES is a complicated piece of 8bit machinery. That's right, the NES is an 8bit system if you didn't know already. The NES uses a customised Motorola 6502 processor more similar to the Intel x86 chips than to the ARM series. The NES was released some time before I was born, so I have no idea when (late 70's maybe) (I'm 15). 
+
+  For it's picture processing needs, the NES has a PPU (Picture Processing Unit) chip that we program indirectly through memory registers similar to how the GBA works, but still quite different. 
+
+  In the world of sprites, the NES does have hardware sprites, but not have nearly the same extent of features that the GBA does for it's sprites. 
+
+  It's really hard to explain without some code, so how 'bout we learn 6502 assembly!?!
+
+NES Assembly Langauge
+
+  The first of all the CPU registers, on the NES the 3 we are concerned about are:
+
+  A - the Accumulator, all math operations implicitly use this register.
+
+  X - an index register, used for indexing memory addressings.
+
+  Y - an indes register, used for indexing memory addressings.
+
+Note that all 3 registers can be loaded with numbers or values from memory. The uses listed above are just their special abitities like register super powers. :) There are a few others, but as so far we don't need to know about them.
+
+The instruction we will learn first is LDk , where k is one of the 3 registers listed above. So here's some code to demonstrate:
+
+  lda #$50  ; loads A with 50 in hex.
+
+  ldx #$60  ; loads X with 60 in hex.
+
+  ldy #$70  ; loads Y with 70 in hex.
+
+Note that these are, in fact, 8bit registers. You may be wondering what the #$ means. The '#' symbol means immediate value, as in the number is just a number and not an address in memory to load from. The '$' symbol means the number is in hexadecimal. If the '$' was a '%' then the number would be taken as a binary number. If there was no '$' or '%' then it would be a decimal number.
+
+Examples:
+
+  lda #%00100011  ; loads A with a binary number.
+  
+  ldx #50         ; loads X with 50 in decimal.
+
+  ldy #$50        ; loads Y with 50 in hex.   
+
+I hope this is clear, if not, email me.
+
+Memory Address Addressing
+
+  For a number to be interpreted as a memory address by the assembler, all that needs to be done is to leave off the '#'. Now also keep in mind that addresses are usually represented as 16bit hex numbers, so to load a register with a value from memory, we would do this:
+
+  lda $2002   ; load A with the value at memory location 2002 hex.
+
+  ldx 2002    ; load X with the value at memory location 2002 decimal.
+
+  ldy 2002    ; load Y with value at location 2002 decimal.
+
+Not too difficult, eh?
+Now for the next instruction you need to know.
+
+
+
+
+Storing Values In Memory
+
+  The next instruction we will learn is STk where k is one of the 3 registers. The store instruction cannot to my knowledge take a immediate value as a parameter/operand. I'll let some code examples explain:
+
+  sta $2004  ; stores A in memory location 2004 hex.
+
+  sty $2002 ; stores Y in memory location 2002 hex.
+
+  stx $FF   ; stores X in memory location 00FF hex.
+
+Note that addresses are usually represented as hex numbers. If you use a 2 digit number in a store instruction, it is interpreted as 00xx where xx is the 2 digit number you used.
+
+Also note that what we've done so far is called Direct Addressing, were we just give the actual address we want to put something into.
+
+
+Day 2 - A Source Code File's Structure
+
+
+
+What's Happening? 
+
+  Well, you white-belt NES programer you, today we're going to learn the structure a NESASM code file. Unfortunately, our assembler is very finicky about the indentation of our code. All labels start right at the begining of a line and everything else gets tabbed in once. Even though this may sound bad, it really helps with readability and understanding of the code, especially in big programs.
+
+About Banks
+
+  No, banks don't hold your money for you. They hold your program and all it's data. There are 3 banks that we will typically use, they are:
+
+  Bank 0 - We're our code goes starting at $8000.
+
+  Bank 1 - An Interrupt Table. Important. Starts at $FFFA for us.
+
+  Bank 2 - Where we will be putting our sprite and background data.
+     Starting at $0000.
+
+  I'm not sure how many banks there are, but it's obvious there's atleast 3. We will use the .bank instruction to move banks. And we'll use .org to tell the assembler where we are starting from in that bank.
+
+The INES Header
+
+  The INES header comes at the beginning of every ROM file and tells the emulator several things. The header pieces are:
+
+  .inesprg     - tells how many program code banks there are.
+  .ineschr     - tells how many picture data banks there are.
+  .inesmir     - tells something I don't remember, but always 1
+  .inesmap     - We always use Mapper 0.
+
+Our typical settings for these are:
+
+  .inesprg 1   ; one (1) bank of program code
+  .ineschr 1   ; one (1) bank of picture data
+  .inesmap 0   ; we use mapper 0
+  .inesmir 1   ; Mirror setting always 1.
+
+Those four (4) lines will be at the (almost) very beginning of EVERY code file.
+
+Bank 0 and .ORGing
+
+  We will use Bank 0 to hold our code and start it at location $8000.
+Here's how we'll do it:
+
+  .bank 0   ; bank 0.
+  .org $8000  ; goto location $8000.
+
+  ; program's code would go here.
+
+That's all there is to that. Note that a semi-colon (;) means comment and the assembler ignores anything past the semi-colon on the line.
+
+Bank 1 And The 3 Interrupts
+
+  Instead of a long paragraph, how 'bout some yummy code:
+
+  .bank 1     ; change to bank 1
+  .org $FFFA  ; start at $FFFA
+
+  .dw 0        ; location of NMI Interrupt
+  .dw Start    ; code to run at reset, we give address of Start label 
+         ; that we will eventually put in bank 0
+        .dw 0        ; location of VBlank Interrupt I think.
+                     ;either way, we don't need; it right now.
+
+  Wasn't that easy, that's ALL that goes in bank 1, simple!
+
+Bank 2 And Our Picture Data
+
+  Bank 2, we will be starting at $0000 and in it we will include our picture data for backgrounds and sprites. Here goes:
+
+  .bank 2        ; change to bank 2
+  .org $0000    ; start at $0000
+
+  .incbin "our.bkg"  ; INClude BINary file that will contain our              ;background pic data.
+  .incbin "our.spr"  ; INClude BINary file that will contain our sprite pic data
+
+Day 3 - About NES Programming
+
+
+
+The PPU 
+
+  To get anything at all to happen on the NES in terms of graphical output, we need to program the PPU (Picture Processing Unit). To program the PPU, we store values into certain memory addresses that when set will cause the NES to setup the PPU with those values. All programming on the NES is done using what's called "Memory Mapped Registers", you may know about this if you've programmed for the GBA. For you Intel knowledgeable people, this is totally foreign. 
+
+Binary Notation
+
+  Just to be absolutely clear, we will give the bits of a memory register in the following order:
+
+  Here's a random binary number (1 byte), and how we number it's bits:
+
+  0 1 1 0 0 0 1 1
+  
+  7 6 5 4 3 2 1 0
+
+So the 7th bit is on the left and 0 bit on the right.
+
+Setting Up The PPU
+
+  Note that one of the first things we need to do is set-up the PPU. We
+do this by storing values into $2000 and $2001 which are the 2 PPU control registers in memory. 
+
+  To set-up the PPU we do 2 stores into memory.
+The code is:
+
+  lda #%00001000 
+  sta $2000
+  lda #%00011110
+  sta $2001
+
+The value we put into $2000 tells the PPU that the 2 NMIs are disabled, sprite size is 8x8, we use Screen pattern table $0000 and sprite pattern table $1000, increment addresses by 1, and we'll be using Name Table at $2000. These 2 memory registers are probably the two most complicated, but still easy, mem. registers to use.
+
+The store into $2001 tells the PPU to not influence the pallete toward any certain color, show sprites, turn the screen on, show sprites everywhere, show left 8 pixels, color display.
+
+You should be able to figure all that out by looking at the binary number and using the notation I already showed you to figure out what the bits mean when we load registers.
+
+What Else Do We Do To Get Output?
+
+  If you are talking about backgrounds, we need to do a couple of things:
+
+
+Making A Background:
+
+1.  Draw some tiles in Tile Layer Pro.
+2.  Include that file as the first file in bank 2.
+3.  Create and Load a pallete.
+4.  Set tile numbers in Name Table.
+
+   For sprites, the steps are slightly different:
+
+Making A Sprite:
+
+1.  Draw the sprites in Tile Layer Pro.
+2.  Include that file as the second file in bank 2.
+3.  Create and Load a pallete.
+4.  Set sprite attributes in Sprite data memory (like OAM on GBA).
+   
+   We'll learn how to load the pallete tomorrow! Note that loading the               
+   pallete is important as half is the background pallete and half is 
+   the sprite pallete.
+
+Day 4 - Making And Loading A Pallete
+
+WHAT!?! 
+
+  That's right, today we create and load a pallete. To create the pallete, we'll use the program PAL.exe which I gave you in that zip file in Day 1. Run it, you will see a window with 32 gray boxes which you can fill in by drawing colors from the colored boxes on the bottom. Make sure when you make your pallete that you make the first color on each row black or you'll get some funky results when we make backgrounds and sprites.
+
+  Save the pallete as our.pal, to save click the only menu and click the option with the word save in it. Good. If you didn't do all that and got pissed that I made you run a program that wasn't the assembler itself, click here to download my pallete that I made for you. :) .
+
+  *New paragraph: what a pallete is, plain and simple*
+  *If I say something contradictory to this paragraph later in 
+      this file, ignore it. *
+
+  A pallete is basically a bunch of colors to pick from. Our pallete is 32 colors /bytes (1 color = 1 byte) long. 16 colors for the sprite pallete, 16 colors for the BG pallete. Even though you can pick from 16 you can only use 4 per sprite or 4 per 16x16 piece of BG. Doing this is a little more complicated that what we've done so far, so I won't cover it yet. OK, actually I just haven't done it yet, so how am I supposed to teach
+you how to do it?
+
+  * end of new paragraph *
+
+How We Load The Pallete?
+
+  To load the pallete, we write to 2 memory registers, $2006 twice to give it the full address ($3F00) that we are going to load the pallete to. And then we just keep giving $2007 byte after byte of our pallete until we've given it all of the pallete.
+
+  However, before we load the pallete, we need to learn a few other things. 
+
+Indexed Addressing
+
+  Maybe you remember in Day 1 or 2, when I said that X and Y registers can be involved in Indexed Addressing. So this is how it works, k? :
+
+  ;Assume X is 6.
+
+  lda $2002, x    ; loads A with value at memory location ($2002+6) so 
+  ; memory location read is $2008.
+
+  ;Assume Y is 9;
+
+  lda $2000, y    ; loads A with value at memory location ($2000+9) so
+  ; memory location read is $2009.
+
+  Note that you can load any register and use indexed addressing, not    just A.
+
+The Other Thing.
+
+  The other thing you need to know (and should have figured out already) is that load (and maybe store) instructions can take a label as the base address. here's some code to illustrate:
+
+  somelabel: .incbin "our.pal"  ; include a pal file and label it's location.
+  
+  lda somelabel, x  ; load A with value from location (somelabel's address+X register's
+                    ; value).
+
+  Please remember that unless I say otherwise, examples that just load A with something are just as applicable to loading X or Y. You should already know how label's work, if you don't you shouldn't be reading this. Go read my Intel ASM Tutor or other basic assembly book/article. Like I said before, you should already know some kind of assembly language and label's are basic to ALL of them. So there.
+
+Loading The Pallete
+    
+  Instead of me blabbing my keyboard off, how 'bout we let the code 
+explain it? :
+
+  lda #$3F   ; these 4 lines tell $2006 that we
+  sta $2006  ; want the stuff we load $2007 with
+  lda #$00   ; to start at memory location $3F00
+  sta $2006  ; . Note that since we can only store a byte at a time 
+             ; we store twice to get the whole address in there. 
+  ldx #$00   ; load X with 0.
+  loadpal:   ; note that labels are followed by a ':' and aren't tabbed 
+  lda ourpal, x   ; load A with pallete value at location ourpal + x.
+
+
+  sta $2007   ;store the next pallete value into $2007
+              ; which will put in the right place for us.
+  inx         ; you've never seen this instruction before 
+              ; but it stands for INcrement X. it adds 1 to X.   
+  cpx #32     ; ComPare X with 32 which is how many pallete 
+              ; values we need to load.
+
+  bne loadpal  ; bne stands for Branch on Not Equal, so this 
+  ; will branch to loadpal if X wasn't equal to 
+  ; 32. If X is 32, then the loop will stop and 
+  ; we�re done loading the pallete.
+
+Assume ourpal is a label that is defined later in the source file that looks something like this:
+
+ourpal: .incbin "our.pal"   ; label our pallete for use in 
+; the loading code.
+
+We will put together a complete code file when we get a sprite displayed tomorrow.
+
+Here's that again without the comments:
+
+  lda #$3F
+  sta $2006
+  lda #$00
+  sta $2006
+
+  ldx #$00
+loadpal:
+  lda ourpal, x
+  sta $2007
+  inx
+  cpx #32
+  bne loadpal
+
+The New Instructions
+
+  You may have noticed the 3 new instructions in the loading code. 
+        They are:
+
+  INX - Adds 1 to X. There is also INY which adds 1 to Y. There is 
+NO INA I heard that the designers of the 6502 just forgot it. There                  is a INA on the next version of the 6502 (the 65c02) that is used 
+on the SNES.
+
+CPX - Compares a value with X. There is also CPY and CPA which        compare things with Y and A respectively. You can only use 
+  immediate values here. NO MEMORY ADDRESSES ALLOWED.
+
+  BNE - Jumps to a label if the result of the last CPk (k is A or
+  X or Y) instruction was Not Equal. There is also BEQ which jumps
+        if  the result was EQual. There are a few more that I'll explain 
+        when they come up.
+
+
+
+  Loading the pallete is EXTREMELY important as a background or a sprite is NOTHING without it's pallete. Loading a pallete is basically all you need to do to it as once it's there, it does it's job without any help from you. Tomorrow a sprite.
+  
+  
+
+
+Day 5 - Displaying A Sprite
+
+
+
+Sprites 
+
+  You would think between backgrounds and sprites, that backgrounds would be easier. Wrong! Sprites are so much easier than backgrounds. To do sprites, we just need to give a few pieces of info to SPR-RAM (sprite x,y positions, tile#, etc.). Well I guess we need to draw the sprite's picture first. So let's go! :)
+
+Tile Layer Pro
+
+  You might be asking how much space we have for sprites. Answer: 4 KiloBytes. Alright, download Tile Layer here. Download an empty 4kb file here. Run TLP.exe and open MT.spr . Now click the View menu and set the "Format" to NES by hovering the mouse over "Format" and clicking "NES". 
+Click the first square in the upper-left of the large grid-window. Now click
+the farthest right rectangle in the "Pallete Editor Window". That's right if you noticed, we can only use 4 colors. Now draw a smiley face or something in the "Tile Editor Window". Save the file as our.spr . Good we have a sprite! Sorry if I rambled.
+
+If you haven't noticed, spr means SPRite and bkg means BacKGround.
+
+If you couldn't do that, click here to download mine!
+
+Also, download again and name it "our.bkg" we won't use our.bkg today, but we do need it right now. Just put our.bkg and our.spr in the same folder that you are going to use for you code file.
+
+Bank 2 Becoming More Important
+
+  In a previous Day, we told the PPU that we'll use $0000 in our Bank 2 as background picture data, and $1000 as sprite picture data. We will have Bank 2 being 8kb which is $2000 bytes. 4kb is 4096 bytes or $1000 in hex. So if we put the .bkg 4kb file first in Bank 2 and the 4kb file second, we will end-up having the picture data in perfectly the right place where we told Mr. PPU the stuff should be.
+
+In short: Bank 2 has 2 binary files included in this order: our.bkg and our.spr, this order is exactly how we told the PPU it would be and it works our because each file is 4kb and all together we need 8kb. 4*2=8, got it?
+
+
+
+
+
+Here's how our Bank 2 code looks now:
+
+  .bank 2
+  .org $0000
+  .incbin "our.bkg"
+  .incbin "our.spr"
+
+.incbin includes a binary file.
+
+Writing To SPR-RAM
+
+  SPR-RAM or otherwise known as "Place for Sprite Info", is written to
+by the two registers: $2003 and $2004. You write 2 times to $2003 giving it
+the address you want to start at and you keep giving $2004 the info until
+your done.
+
+  Remember that we do loads of one byte at a time, so you need to give
+$2003 the two (2) pieces of the address. Like this:
+
+  lda #$00
+  sta $2003
+  sta $2003
+
+Since the address we want is $0000, we just store $00 twice. If we wanted say
+$00A9 for example, we'd give the first 2 digits first and the second two second
+like so:
+
+;(NOTE: this is just an example, we'll start at $0000 for SPR-RAM writing)
+  lda #$00
+  sta $2003
+  lda #$A9
+  sta $2003
+
+That's how we give a 16bit address to somewhere. Note that we also did this when loading the pallete, except we used a different memory register.
+
+Actually Writing to SPR-RAM
+
+  Now that we've given $2003 what address to start at ($0000), we can just give $2004 the info. What info you ask? Each sprite has 4 bytes of info, they are:
+
+  Y - vertical position on the screen.
+  N - 8x8 tile number in the .spr file we include.
+  C - Some funky special stuff I'm not covering yet.
+  X - horizontal position on the screen.
+
+Each of these is one byte, if you didn't notice. :).
+There can be 64 sprites' info stored here. We'll display our sprite at 20,50 and our sprite should be the first tile, so the other two bytes can be 0.
+Here goes:
+
+  lda #50     ; note we load a decimal number
+  sta $2004   ; store Y value
+  lda #00     ; tile number is 0 for the first sprite
+  sta $2004   ; store tile number.
+        sta $2004   ; load that 0 again because we don't need
+                    ; any special  stuff right now.
+  lda #20
+  sta $2004   ; store X value.
+
+And boom! The sprite appears. (hopefully)
+
+Note that when we give a memory register an address and then write to it's brother register repeatedly, that brother register puts the number in the right place for us, incrementing the address we gave the first register. All we have to do is keep stuffing the second one.
+
+VBlank
+
+  Ideally, we really should write to SPR-RAM during the time when the little electric-beam gun in the TV has just finished the frame and is moving back to the top to start drawing the screen again. That's called VBlank. I'm just going to show you the code now and not explain it as our main focus here is sprites.
+
+Here goes:
+
+waitblank:
+  lda $2002  ; load A with value at location $2002
+  bpl waitblank  ; if bit 7 is not set (not VBlank) keep checking
+
+Oh well, I explained it alittle. Don't worry about this. It'll be in the source we put together now, but just remember that it makes the SPR-RAM update safe.
+
+Putting Together Our First Code File
+
+  Alright, create a file called "our.asm" and open it in MS Notepad. Copy in the following. And yes it will be commented. Indentation is important.
+
+  ;;--- CODE START ---;;
+
+  ; INES header stuff
+  .inesprg 1   ; 1 bank of code
+  .ineschr 1   ; 1 bank of spr/bkg data
+  .inesmir 1   ; something always 1
+  .inesmap 0   ; we use mapper 0
+
+  .bank 1   ; following goes in bank 1
+  .org $FFFA  ; start at $FFFA
+  .dw 0    ; dw stands for Define Word and we give 0 as address for
+                 ; NMI routine
+        .dw Start ; give address of start of our code for   
+                  ; execution on reset of NES.
+        .dw 0     ; give 0 for address of VBlank interrupt      
+                  ; handler, we tell PPU not to make an interrupt for VBlank.
+
+  .bank 0   ; bank 0 - our place for code.
+  .org $8000  ; code starts at $8000
+  
+Start:  
+  lda #%00001000  ; do the setup of PPU
+  sta $2000       ; that we
+  lda #%00011110  ; talked about
+  sta $2001       ; on a previous day
+
+  ldx #$00    ; clear X
+
+  lda #$3F    ; have $2006 tell
+  sta $2006   ; $2007 to start
+  lda #$00    ; at $3F00 (pallete).
+  sta $2006
+
+loadpal:                ; this is a freaky loop
+  lda tilepal, x  ; that gives 32 numbers
+  sta $2007       ; to $2007, ending when
+  inx             ; X is 32, meaning we
+  cpx #32         ; are done.
+  bne loadpal     ; if X isn't =32, goto "loadpal:" line.
+
+waitblank:         ; this is the wait for VBlank code from above
+  lda $2002  ; load A with value at location $2002
+  bpl waitblank  ; if bit 7 is not set (not VBlank) keep checking
+
+  lda #$00   ; these lines tell $2003
+  sta $2003  ; to tell
+  lda #$00   ; $2004 to start
+  sta $2003  ; at $0000.
+
+  lda #50  ; load Y value
+  sta $2004 ; store Y value
+  lda #$00  ; tile number 0
+  sta $2004 ; store tile number
+  lda #$00 ; no special junk
+  sta $2004 ; store special junk
+  lda #20  ; load X value
+  sta $2004 ; store X value
+  ; and yes, it MUST go in that order.
+
+infin:
+  jmp infin   ; JuMP to infin. note that this loop never ends. :)
+
+tilepal: .incbin "our.pal" ; include and label our pallete
+
+  .bank 2   ; switch to bank 2
+  .org $0000  ; start at $0000
+  .incbin "our.bkg"  ; empty background first
+  .incbin "our.spr"  ; our sprite pic data
+  ; note these MUST be in that order.
+
+  ;;--- WERE DONE / CODE END ---;;
+
+I realize that maybe you hoped for something smaller. You may want to research this for a day or 2 cross checking with my previous articles to find the inside scoop on what each individual thing does. If you have questions, ask me.
+
+Assembling
+
+  Put everything (our.pal, our.bkg, our.spr, nesasm.exe, your code file) in the same folder and open up DOS. CD to your folder and type:
+
+nesasm Your_Filename.asm
+
+  nesasm.exe will make a .nes file in that folder. Run it in an emulator to see the results.  
+
+This Day In Review
+
+  Wow, that was alot! Don't worry, it looks like alot, but once you know the NES, it'll just come to you. I guess it's on to backgrounds tomorrow maybe.
+  
+  
+
+
+Day 6 - Jumps And Key Presses
+
+
+Reading Keys 
+
+  We will assume that it is a normal rectangle NES pad you want to read and not anything funky. To read to see if a key is down, you read $4016 (Pad 1) or $4017 (Pad 2) once per key. If the key is down, Bit #0 (from right) will be set (1). And with 1 and jump if Not Equal. Before you read anything, however, you need to reset the pad (strobe).
+
+Strobe/Reset
+
+  To strobe/reset the pad, we write a 1 then a 0 to $4016 or $4017 (for pad 2). This is done like so:
+
+  lda #$01
+  sta $4016
+  lda #$00
+  sta $4016
+
+That's it! Onto actually reading the pad.
+
+Order of Reads
+
+  On every read of $4016 or $4017, you get the status of a different key. The order of keys read is:
+
+  Read # | Corresponding Key
+       1. A
+       2. B
+       3. SELECT
+       4. START
+       5. UP
+       6. DOWN
+       7. LEFT
+       8. RIGHT
+
+  So how 'bout we learn some about conditions and jumps before we do any more?
+
+Conditions And Jumps
+
+  There are certain "conditions" that are set by most instructions, some, however, can only be set by a compare instruction which'll be discussed later. These conditions are
+
+  Conditions
+    EQ - EQual - Zero
+    NE - Not EQual - Not Zero
+    LT - Less Than
+    GT - Greater Than
+    PL - Positive
+    MI - Negative
+    CC - Carry Clear
+    CS - Carry Set
+    VC - oVerflow Clear
+    VS - oVerflow Set
+
+  These conditions are set by most instructions, including loads. All of these have a branch instruction. Put a 'B' in front of one of those abbreviations and you'll have your branch (Conditional Jump) instruction, examples:
+
+      ; assume that there is a label called Loopto .                     beq Loopto  ; branch to Loopto if last compare was EQual or 
+            ; last instruction resulted in a zero.
+
+bpl Loopto  ; branch if Bit #7 (always counted from right->left) is set.
+bmi Loopto  ; branch if Bit #7 is clear.
+
+I hope you get the idea. I believe that only the Not Equal and Equal conditions can be set by a non-compare instruction.
+
+Incase you don't know, a label is just a name/word followed by a colon ':'. Examples:
+
+  Loopto:
+  aslkdfj:
+  Hello_a:
+
+A Small Example of Reading Keys
+
+  Enough talk, here's the code:
+
+  lda #$01    ; |
+  sta $4016   ;  \
+  lda #$00    ;   - Setup Pad for reading.
+  sta $4016   ; _/
+
+  lda $4016  ; read for A key.
+  and #1     ; check to see if down.
+  bne WasDown  ; branch if it was down.
+       
+                   ; I'm not sure why it's a BNE for a bit AND, it just is, 
+                   ; SO USE IT! :)
+
+  lda $4016  ; read for B key.
+  lda $4016  ; read for SELECT
+  lda $4016  ; read START status
+  and #1     ; see if down.
+  bne StartDown  ; branch if down.
+
+  lda $4016  ; UP
+  lda $4016  ; DOWN
+  lda $4016  ; LEFT
+  lda $4016  ; RIGHT
+
+  jmp NothingDown  ; the JMP instruction jumps no matter what.
+  
+StartDown:
+  ; Do stuff if START is pressed.
+
+WasDown:
+  ; Do stuff if A is pressed.
+
+NothingDown:
+  ; Nothing was down
+  
+Hope you didn't thing that was too hard! :).
+Personally, I find the GBA easier (a little) to program, so for me, NES
+programs take a little more studying to figure out.
+
+This Day In Review
+
+  First, I'd like to mention that you probably know about my GBA ASM series and maybe you also know about my x86 (DOS) ASM tutorial? Switching
+between 3 ASM languages DOES sometimes screw me up, so if you see a something
+rather wierd or any mistake feel free to let me know. Thank you.
+
+  Also, I know Key Press Detecting isn't exactly all that exciting by itself, but things WILL GET MORE INTERESTING! I promise. ;)
+
+  
+
+Day 7 - Using Memory
+
+
+
+Where? 
+
+  Before we do anything else it would probably be best to show how to
+use memory for our own data. This data could be anything from just a number you need to store or X/Y values for sprites. For this data we'll use free memory at $0000 (CPU).
+
+How?
+
+  We'll ORG at $0000 in our Code Bank 0 and label some memory before ORGing to $8000 where our code starts. To label some memory (a.k.a making a variable) we use the assembler operation .db like so:
+
+; note this is only a small code piece to demonstrate memory labeling syntax.
+
+     .bank 0
+     .org $0000
+
+label1:    .db   0     
+byte1:     .db   $A5   ; notice that with Define Byte (.db) we don't need the '#' .
+
+     .org $8000
+
+Start:     ; from here on would be code as usual
+
+  Since label1 and byte1 are infact labels, they do need to start at the first colon (not tabbed in).
+
+Loading Value of Our "Variables"
+
+  To load the value of one of our "Variables", just use a regular Load instruction with the label's name. Like so:
+
+  ;assume label1 and byte1 have been declared like shown above.
+
+  lda label1  ; load A with label1's value    
+  ldx label1  ; load X with label1's value
+  ldy label1  ; I hope you get the idea now
+
+  lda byte1  ; load A with byte1's value
+
+  That's it for getting the value. Storing is just as easy. Even though you can figure it out yourself, I'll go through the same steps with storing.
+  
+Storing Into Our Variables
+
+  Storing is just like loading except the other way around (putting, not getting). It's done like this:
+
+  ;again assume label1 was declared like shown before
+
+  sta label1  ; store A's value into label1
+  stx label1  ; store X's value into label1
+  sty label1 ; store Y's value into label1
+
+  stx byte1  ; you should get it by now, I hope.
+
+  Simple, isn't it?
+
+Some Important Facts
+That I Waited Until The End To Mention
+  
+  The main thing I want to mention here is that we can define more than just bytes.
+We can also define words, but since the NES's CPU works in only 8bits, this is a little more than I want to talk about right now. 
+
+  Also, I haven't tried it, but if you want to increment or decrement (Add or Sub 1 respectfully), you could probably go something like this:
+
+  inc label1  ; add 1 to label1
+
+  dec label1  ; sub 1 from label1
+
+This Day In Review
+
+  I have no idea what's in store for tomorrow, since I need to complete Day 13 of the GBA tutorial. I hope you had fun today. Why don't you try moving a sprite with the keypad?
+  
+  
+
+Day 8 - Comparing Stuff
+
+
+
+What do you mean? 
+
+  To be perfectly honest, I forgot to cover the comparison instructions in Day 6 so I'm going to have this Day 8 just be a short one on compares.
+
+How?
+
+  There are three compare instructions:
+
+  CPX - Compare a value with X
+  CPY - Compare a value with Y
+  CMP - Compare a value with A
+  *where "value" is either a number, or a value from a memory location*
+
+Have you noticed that there's no compare instruction to compare the registers together?  Weird! :)
+
+Some examples of use:
+        cpx #32   ; remember to put a '#' (decimal) or a '#$'(hex) 
+; before immediate numbers. (immediate==just a number, 
+; not  an address)
+
+  cpy $2002  ; compares Y with contents of $2002
+  cmp #$20  ; compares A with 20 in hex.
+  beq IfEqual ; branches to label IfEqual, if A was equal to #$20.
+
+Compare instructions are used to set those conditions we talked about 
+in Day 6, so that we can use the conditional jumps (BEQ, BNE, BCC, etc...).
+
+
+
+
+
+
+
+Day 9 - A Moving Sprite Program
+
+
+
+What? 
+
+  Today isn't really a tutorial, it's more the solution to the suggestion made yesterday about a program that allows the user to move the sprite. I believe that we have infact covered everything necessary to make a Moving Sprite Program. So, the next section will be the complete code file, and that'll be all for today.
+
+Da Code!
+
+  ;;--- CODE START ---;;
+  .inesprg 1
+  .inesmap 0
+  .inesmir 1
+  .ineschr 1
+
+  .bank 1     
+  .org $FFFA
+  .dw 0        ; no VBlank
+  .dw Start    ; address to execute on reset
+  .dw 0        ; no whatever
+
+  .bank 0
+  .org $0000
+X_Pos   .db 20       ; a X position for our sprite, start at 20
+Y_Pos   .db 20       ; a Y position for our sprite, start at 20
+
+  .org $8000  ; code starts at $8000 or $C000
+Start:
+
+  lda #%00001000  ;
+  sta $2000       ; 
+  lda #%00011110  ; Our typical PPU Setup code.
+  sta $2001       ; 
+
+  ldx #$00    ; clear X            ;; start of pallete loading code
+
+  lda #$3F    ; have $2006 tell
+  sta $2006   ; $2007 to start
+  lda #$00    ; at $3F00 (pallete).
+  sta $2006
+
+loadpal:                ; this is a freaky loop
+  lda tilepal, x  ; that gives 32 numbers
+  sta $2007       ; to $2007, ending when
+  inx             ; X is 32, meaning we
+  cpx #32         ; are done.
+  bne loadpal     ; if X isn't =32, goto "loadpal:" line.
+                                  ;; end of pallete loading code
+
+infinite:  ; a label to start our infinite loop
+waitblank:         
+  lda $2002  ; these 3 lines wait for VBlank, this loop will actually miss VBlank
+  bpl waitblank ; alot, in a later Day, I'll give a better way.
+
+  lda #$00   ; these lines tell $2003
+  sta $2003  ; to tell
+  lda #$00   ; $2004 to start
+  sta $2003  ; at $0000.
+
+  lda Y_Pos  ; load Y value
+  sta $2004 ; store Y value
+
+  lda #$00  ; tile number 0
+  sta $2004 ; store tile number
+
+  lda #$00 ; no special junk
+  sta $2004 ; store special junk
+
+  lda X_Pos  ; load X value
+  sta $2004 ; store X value
+  ; and yes, it MUST go in that order.
+  
+  lda #$01   ; these
+  sta $4016  ; lines
+  lda #$00   ; setup/strobe the 
+  sta $4016  ; keypad.
+
+  lda $4016  ; Abutton Status ; note that whatever we�re not interested
+        lda $4016  ; Bbutton Status ; in we just load so it'll go to the next 
+  lda $4016  ; Select button status ; one
+  lda $4016  ; load Start button status
+  lda $4016  ; load UP button status
+  and #1     ; AND status with #1
+  bne UPKEYdown  ; for some reason, need to use NotEquals with ANDs. 
+             ; So it'll  jump (branch) if key was down. 
+  lda $4016  ; load DOWN button status
+  and #1     ; AND status with #1
+  bne DOWNKEYdown
+
+  lda $4016  ; load LEFT button status
+  and #1     ; AND status with #1
+  bne LEFTKEYdown
+
+  lda $4016  ; load RIGHT button status
+  and #1     ; AND status with #1
+  bne RIGHTKEYdown
+  jmp NOTHINGdown  ; if nothing was down, we just jump
+                         ; (no check for conditions) down past
+                         ; the rest of everything.
+
+UPKEYdown:
+  lda Y_Pos ; load A with Y position
+  sbc #1  ; subtract 1 from A. Only can do math on A register. 
+                ; SBC (Subtract with Borrow)
+  sta Y_Pos ; store back to memory
+  jmp NOTHINGdown  ; jump over the rest of the handling code.
+
+DOWNKEYdown:
+  lda Y_Pos 
+  adc #1  ; add 1 to A. ADC (Add with Carry)((to A register))
+  sta Y_Pos
+  jmp NOTHINGdown ; jump over the rest of handling code.
+
+LEFTKEYdown:
+  lda X_Pos
+  sbc #1  
+  sta X_Pos
+  jmp NOTHINGdown 
+;the left and right handling code does the same as UP and Down except..  ;well.. with left and right. :)
+
+RIGHTKEYdown:
+  lda X_Pos
+  adc #1
+  sta X_Pos
+; don't need to jump to NOTHINGdown, it's right below. Saved
+; several   bytes of PRG-Bank space! :)
+
+NOTHINGdown:
+  jmp infinite
+
+tilepal:   .incbin "our.pal"  ; a label for our pallete data
+
+  .bank 2
+  .org $0000
+  .incbin "our.bkg"
+  .incbin "our.spr"
+
+;;--- END OF CODE FILE ---;;
+
+Hopefully you still have, the our.pal,our.bkg,our.spr files from the sprite day. You should understand all of this as I have (or atleast I think I have) covered everything necessary (to be able to do this).
+
+Note: In some emulators, you may have to hit down a few times before the sprite appears. I don't know why this happens.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Day 10 - Sprite DMA
+
+
+
+Sprite DMA? 
+
+  
+  Yep, Sprite DMA. You remember how we wrote to SPR-RAM (OAM) with $2003 and $2004? Well, this is actually unrealiable on the real system (or so I've heard). What we actually need to do is utalize (utallise?) memory as OAM, and then put a number into a register and everything is copied for us automatically into the actual OAM. If you didn't get that it'll (hopefully) become clearer as we do it.
+
+What Memory?
+
+  As I said above, we need to use our "variable" memory to make a sort of duplicate of OAM. In this tutorial we will use $0300 for our OAM Copy if you will, and you will, 'cause I will/am... nevermind. ok... Note that there are only something like 64 sprites on the NES so this only really takes (64*4(4bytes for each entry)=256 bytes aways from what we can use. So basically, leave all your "variables" at $0000-$0200 and only go over $0500 with your "variables" if you have to.
+
+  Now when I say that we'll be using $0300 for an OAM Copy, I mean that it will (actually HAS to) be the same layout as the regular OAM. Also, try to remember that $0300 is a memory address, which is somewhat different from a memory register as in we have to increment the address every write/store ourselfs rather than just keep giving values to a (memory) register.
+
+  Also (alot of alsos, I know... I just want to make this as clear as possible), there is a reason we use an even number in the hundreds for our OAM Copy. I'll tell you in the next section.
+
+  Alright, hopefully you get the theory. Now let's see some assembler!
+Here goes:
+
+;;--- START OF CODE ---;;
+  .inesmap 0  ;
+  .inesprg 1  ; I do these in different orders, it doesn't matter
+  .ineschr 1  ; as long as you keep the 1s with the right ones. I hope 
+  .inesmir 1  ; didn't confuse you as much as I just confused myself. 
+
+  .bank 1
+  .org $FFFA
+  .dw 0
+  .dw Start
+  .dw 0
+
+  .bank 0  ; code bank
+  .org $0000 ; variable ORG location $0000
+
+  ; normally variables defined here
+
+  .org $0300 ; OAM Copy location $0300
+
+Sprite1_Y:     .db  0   ; sprite #1's Y value
+Sprite1_T:     .db  0   ; sprite #1's Tile Number
+Sprite1_S:     .db  0   ; sprite #1's special byte
+Sprite1_X:     .db  0   ; sprite #1's X value
+Sprite2_Y:     .db  0   ; same thing, same order for sprite #2
+Sprite2_T:     .db  0   ; note that I numbered 1 2 ...
+Sprite2_S:     .db  0   ; some people may actually prefer starting
+Sprite2_X:     .db  0   ; the count at 0, but it doesn't really matter.
+; this would just go on and on for however many sprites you have
+
+  .org $8000 ; code ORG location $8000
+
+Start: 
+  ; code goes here, the code that goes here or atleast the code to get 
+  ; above sprite definitions into the actual OAM, will be given in the 
+  ; next section.
+
+infin:
+  jmp infin  ; infinite loop
+;;--- END OF CODE FILE ---;;
+
+If you don't get it, email me telling exactly what you don't get.
+
+The DMA Register
+
+  The DMA Register is $4014. We want to write a 3 to it. Why 3? Because
+our OAM Copy is at $0300. Writing to the register causes the stuff at
+$0n00 (where 'n' is the number we wrote) to be copied into the actual OAM.
+So if we had our stuff at $0400 we would write a 4, if it was at $0500 then
+write a 5. Get it? I sure hope so. If not tell me please, I will not hesitate
+to help you.
+
+So, now to get our values in the actual OAM assuming we put the sprite's info
+in the Sprite#-whatever "variables", we just go like this:
+
+  lda #$3  ; could be #3, 3 is the same hex and decimal (obviously).
+        sta $4014 ; when we write to it, the copy from $0300+ to actual 
+                  ; OAM, is carried out.
+
+That's it! It's not only more reliable than our old method, it's easier!
+
+How to modify Day 9's code to use this method.
+
+  Well, we need to do several things. First, copy the .org $0300 and stuff over our old variables section. We don't need the variables any more (for sprite info that is) because we're using the OAM Copy itself for the sprite's X and Y.
+
+  Second, use a find and replace function to replace all the 'X_Pos' and 'Y_Pos' with 'Sprite1_X' and 'Sprite1_Y' respectively.
+
+  Third find the block of code that loads $2003 with a value and then proceeds to write to $2004 several times. Find that block of code and replace it with:
+  
+  lda #3
+  sta $4014
+Day 11 - The JSR Instruction
+
+
+
+JSR? 
+
+  
+  JSR stands for Jump to SubRoutine and is used to, well... jump to a subroutine.
+
+How do we use it?
+
+  We use it by giving it the name of the label that we want to jump to.
+Example:
+
+  jsr OurSub
+  ; blah, some code
+
+OurSub:
+  ; blah, some more code
+  ; return to instruction after the JSR.
+
+Return? How?
+
+  With the RTS (ReTurn from Subroutine) instruction of course! So the full version of the above stuff is:
+
+  jsr OurSub
+  ; blah, some code
+
+OurSub:
+  ; blah, some code
+  rts  ; returns and resumes execution at the first "blah, some code".
+
+Something more
+
+  One thing to remember though, if you just want to separate your code out. then what is described above should be enough. If you want to jump to a subroutine based on a comparison, you would have to do something like the following:
+
+  cmp #5  ; compare A with 5
+  bne DONTcall ; if A isn't 5 we branch over the subroutine call.
+  jsr OurSub
+DONTcall:
+
+
+
+  ;somewhere... possibly far away:
+OurSub:
+
+  ;blah, code.
+  rts ; return
+
+
+
+Day 12 - VBlank And Interrupts
+
+
+
+VBlank? 
+
+  
+  If you don't know what VBlank is, pretend I'm hitting you with a trout. If you do know what VBlank is, pretend I'm hitting you with a trout. If you have no idea what a trout has to do with the NES, pretend I'm hitting you with a trout.
+
+  Now that we have an imaginary fish stench in the room, let's learn a better way to sync with VBlank.
+
+How do we use it?
+
+  First, we have a label, say 'VBlank_Routine', so we put it in the addresses in Bank 1 at $FFFA. Like so:
+
+  .bank 1
+  .org $FFFA
+  .dw VBlank_Routine ; address to execute on VBlank
+  .dw Start ; address to execute at RESET.
+  .dw 0  ; address to execute during a BRK instruction
+               ; (Another Day, Another time).
+
+  .bank 0
+  .org $0000  ;variables
+VBlankOrNo  .db 0
+  .org $8000  ;code
+VBlank_Routine:
+  ;start of function to execute on VBlank
+  inc VBlankOrNo
+  ; add one (1) to VBlankOrNo, will be 1 if VBlank, 0 if not.
+  rti  ; RTI is (Interrupt RETurn or ReTurn from Interrupt)
+
+Start:
+  ;start of main code
+  ;blah some code
+;waitforvblank:  old code
+; lda $2002  old code
+; bpl waitforvblank old code
+;  the new code is :
+
+WaitForVBlank:
+  lda VBlankOrNo ; A = VBlankOrNO
+  cmp #1         ; if A == 1 then is VBlank
+  bne WaitForVBlank ; if not VBlank, then loop and do again
+  dec VBlankOrNO ; 1-- or VBlankOrNO - 1 . VBlankOrNo will be 0 again.
+
+  ; blah, code as usual.
+
+I hope you get the general idea. I may have gotten something backwards or something, so if you know this is wrong, please tell me (I'm tired and may have not typed right!).
+
+UPDATE: Don't forget to set the "Generate VBlank bit" in one of the PPU Control ports!  (it's bit 7 of one of them, I think).
+
+
+
+Day 13 - Backgrounds
+
+
+
+Intro 
+
+  
+  You should know what a background is, it's the stationary picture that the sprites move around on and possibly collide with. The background isn't too hard to make, but the lack of tools for the NES (a real big problem) makes BGs a pain in the you-know-what to make.
+
+Making The BG
+
+  To make the BG, open your "our.bkg" in Tile Layer Pro and draw some tiles. Now, make a map out of the tiles on paper with the tile numbers, how do we get the tile numbers? It's quite simple actually, starting with the first tile is #0 it goes like this (assuming you have Tile Layer at 16 tiles per line):
+
+  $0  $1  $2  $3  $4  $5  $6  $7  $8  $9  $A  $B  $C  $D  $E  $F
+  $10 $11 $12 $13 $14...
+
+So if #$1 was the top-left 1/4th of a smile face, #$2 is the top-right, #$11 is the bottom -left and #$12 is the bottom right 1/4th, you would write on the paper or in a text file:
+
+1 2 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+11 12 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0
+...
+
+Note: The NES Screen is about 32x32 tiles.
+
+The next thing you probably want to do is make that map into a binary file so
+that you can load it to PPU memory like you did with the pallete.
+
+I've written a small program in VB to take a map file like the above (without the '...') and make it into a binary file for the above purpose. You don't need all 32 lines, unless you want them.
+
+Download it here just run it and type the name of the map file (text) in the first box and the name (not extension) of the file you want it to create in the second box. If the map file contains alot of map data, the program may make more than 1 file.
+
+Name Tables
+
+  Name Tables is what originally made me avoid NES Assembly, I just couldn't get it from the sparse and vague and overly technical docs that currently exist.
+
+  To put it simply "Name" means Tile Number and "Table" basically means Map, so the Name Tables is where we want to put our map in PPU memory. There are two Name Tables; typically you'll want to use the first one so we will too. Name Table #1 is at $2020 in PPU memory, OK... that's a lie, it actually starts at $2000 in PPU memory, but since US NESs (and most emulators) don't display the first line (and last for that matter) we have to start the load at $2020.
+
+Making The Code
+
+  I'm going to assume that you already have a source file that has the basic things such as:
+
+1) Bank 1 with the $FFFA stuff (Reset, VBlank etc...)
+2) Bank 2 incbin(ing) the 2 files "our.spr" and "our.bkg" in the right order.
+3) Bank 0 ORGed at $8000, with code to setup the PPU and load the pallete.
+3.5) The binary pallete file incbin(ed) after the infinite loop.
+
+  Now that you have all those things it's time to add the stuff to make the BG appear on the screen. 
+
+  Add the following code after the pallete loading loop:
+
+  ;;--- CODE START ---;;
+
+  lda #$20
+  sta $2006 ; give $2006 both parts of address $2020.
+  sta $2006 
+
+  ldx #$00
+loadNames:
+  lda ourMap, X ; load A with a byte from address (ourMap + X)
+  inx
+  sta $2007
+  cpx #64 ; map in previous section 64 bytes long
+  bne loadNames ; if not all 64 done, loop and do some more
+
+  ;;--- STOP COPYING ---;;
+
+And right after the INCBIN of the pallete add this:
+
+  ;;--- CODE START ---;;
+
+ourMap: .incbin "our.map" ; assuming our.map is the binary map file.
+  
+  ;;--- STOP COPYING ---;;
+
+Assemble and run!
+
+Some other things
+
+  If map2bin.exe made more than one file, you'll need one loop and one .incbin for each file, make sure to use different label names for each incbin and loop. If there's more than one file, make each loop run $FF times by making "cpx #64" into "cpx #$FF".
+
+  MAP2BIN, because it's written in VB, makes every file 2 bytes too big because VB always adds a newline to writes to files.
+
+  There's also something called Attribute Tables, we'll get to those in a later Day.
+
+
+
+Day 14 - Sound Channels 1-3
+
+
+
+Intro 
+
+  Yep, sound. It's actually not that hard to make the NES output a sound. One can make a simple (perhaps ugly) sound by just messing with the necessary mem. regs and turning on the channel in $4015.
+
+  Please note that this pretty much just a rewording of Brad Taylor's Sound Doc in more words that will, hopefully, make it a small bit easier to understand.
+
+  So please read that doc a few times and then come back. Don't worry, this isn't going anywhere! ;)
+
+  One last thing before we begin, bits are always numbered from
+#0 on the right and #7 on the far left.
+
+Square Wave/Channel #1
+
+  I'm not sure what the technical description of a square wave is, but it probably (based on the name) looks something like this: _|-|_|-|_ assuming the |s are shorter.
+
+  The Square Wave Channel 1 has the following features:
+
+1) 54.6 Hz to 12.4 KHz in frequency .
+2) Frequency sweep or constant tone .
+3) output duty cycle adjustment (anyone have any idea what this means?) .
+
+The easiest thing to do is get a constant tone. The second hardest is actually having control over the frequency, the most hardest is the frequency sweep as it took me several tries to get to work. Also, please note that I use 2 emulators for code testing FCEU (FCE Ultra) and Rew if it works on either one, I consider the code "working".
+
+The registers that are for Channel #1 are $4000-$4003 and as usual $4015 for enabling the channel. Please use the sound doc for the specific bit definitions.
+
+$4000
+
+Register $4000 controls (as far as I can tell from all Taylor's tech mumbo-jumbo), starting frequency, and can enable/disable the channel. Most of the time I don't bother with it and just write #$FF to it like so:
+
+  lda #$FF   ; typical
+  sta $4000  ; write
+
+The important bits here are #0-3 and #5, bits #0-3 (according to the doc) are the volume / envelope decay rate, I'm not sure exactly what this means so I just set all the bits. Bit #5 seems to enable and disable the channel (yes, you still need to enable the channel in $4015 for sound to come out). The others I'm assuming can be set so just send #$FF to $4000 if you don't want too much to worry about.
+
+$4001
+
+Register $4001 controls the sweep feature. Sweep (if you didn't know) is when the sound fades in or out.
+
+Because we need good control over individual bits here, we'll load A in binary instead of hex.
+
+Bits #0-2 control how much $4002 is shifted by to get the new frequency.
+
+Bit #3 controls whether to increase or decrease frequency for sweep. (1=increase, 0=decrease).
+
+Bits #4-6 control how fast the sweep runs (range is 0-7).
+
+Bit #7 enables sweep, if sweep is off, the channel will output continuous tone.
+
+So if we want a shift value of 3, the sweep to run at speed 5, increase frequency, and (of course) enable sweep, here's the code:
+        
+        lda #%11011011  ; % means binary number, remember the '#' 
+                        ; for immediate values.
+  sta $4001  ; immediate means "not an address, just a number".
+
+
+$4002
+
+  Register $4002 is just the first 8bits of the frequency. Set it to whatever ya want, the higher the number the lower the frequency (I think).
+
+I'll write $A5 to it (a rather low sound):
+
+  lda #$A5
+  sta $4002
+
+$4003
+
+  Register $4003 contains some wavelength stuff in bits #0-2, which I leave set to 2. And bits #3-7 load the down-counter (thing that tells NES when its time to shut off the sweep), with a value. I leave bits #3-7 loaded with 13. 
+
+  I'm not too sure what any of the stuff in this register means, but #$AB seems to be a fairly good value to store in $4003.
+
+
+Code:
+  lda #$AB
+  sta $4003
+
+$4015
+
+I'm just going to discuss register $4015 once in this "Day". $4015 controls which channels are enabled, the bit layout is as follows:
+
+  Bit 0 = Square Wave Channel 1
+  Bit 1 = Square Wave Channel 2
+  Bit 2 = Triangle Wave Channel 3
+  Bit 3 = Noise Channel 4
+  Bit 4 = DMC/PCM Playback Channel
+  Bits 5-7 = unused
+
+So to turn on Square Wave Ch. 1 we go like so:
+
+  lda #%00000001
+  sta $4015
+
+
+The Full Code
+  I think you should be able to put sample code into a skeleton code file by now, but I'll make a full code listing just because I'm way too much of a nice guy. Here it is:
+
+  ;;---CODE START---;;
+
+  .inesprg 1
+  .inesmap 0
+  .inesmir 1
+  .ineschr 0  ; note that we have no CHR-ROM bank in this code
+  
+  .bank 1
+  .org $FFFA
+  .dw 0 ; no VBlank routine
+  .dw Start 
+  .dw 0 ; we'll get to this at a later time
+
+  .bank 0
+  .org $8000
+; note that I just copy/pasted code from the register sections
+Start:
+  lda #$FF   ; typical
+  sta $4000  ; write
+
+  lda #%11011011  ; % means binary number, remember the '#' 
+                        ; for immediate values.
+  sta $4001  ; immediate means "not an address, just a number".
+
+  lda #$A5
+  sta $4002
+
+  lda #$AB
+  sta $4003
+
+  lda #%00000001
+  sta $4015
+
+infinite:
+  jmp infinite
+
+  ;;--- END OF CODE FILE ---;;
+
+Assemble and Listen! Note that we don't even setup the PPU because we didn't
+do anything graphical. The code should output a nice rising sweep.
+
+Square Wave Channel 2
+
+  Square Wave 2 is nearly exactly the same as Square Wave 1, we won't discuss the (VERY small difference) here. Square Wave 2 uses the exact same bit layout as Square Wave 1 except for different registers at $4004-4007. Here's how the registers compare to Square Wave 1's registers:
+
+  $4004 is same as $4000
+  $4005 is same as $4001
+  $4006 is same as $4002
+  $4007 is same as $4003
+
+And to turn on the channel, write a 1 to bit #2 of $4015.
+
+Triangle Wave Channel 3
+
+  Ah, a new type of channel to discuss, I don't know the technical description of what a "Triangle Wave" is, but I'd bet it looks something like this: /\/\/\/\/\/
+
+  The features of the Triangle Wave Channel are:
+
+  1) 27.3 Hz to 55.9 KHz
+  2) analog triangle wave output (I don't know what this means)
+  3) linear counter (Taylor's doc infers that you can make timed tones
+  with this channel.)
+
+  The Triangle Wave Channel's registers are at $4008-$400B.
+
+$4008
+  Register $4008 contains whether or not to time the tone or make it continuous and the load to the timer that .. well, does the timing.
+
+  Bits #0-6 is the timer load value.
+  
+  Bit 7 enables/disables timing (1=enable)
+
+  As I haven't used the Triangle Wave Channel much yet I haven't tried this yet so this infered info should be considered *UNTESTED/POSSIBLY INACCURATE*.
+
+$4009
+  Register $4009 is unused.
+
+
+
+$400A
+
+  Register $400A is the same as $4002.
+
+
+  Note: I'm not sure if Triangle Wave supports sweep or not.
+
+$400B
+  Register $400B is the same as $4003.
+
+Enabling Triangle Wave Channel 3
+  To enable the Triangle Wave Channel, set (to 1) bit #2 in $4015.
+
+You should be able to come up with something from that, I hope.
+
+
+
+
+Day 15 - The Noise Channel
+
+
+
+Intro 
+
+  The noise channel is channel number 4 and outputs, well, a "noisy" sound. As with all the sound stuff I talk about here, the info comes from 
+The NES Sound Doc.
+
+  The technical description of what the "noise" is, is random frequencies. The reason this isn't described with the other sound channels is for 3 reasons:
+  
+  1) Doing less at once.
+  2) Noise is slightly different from the others.
+  3) I felt like it.
+
+Features
+  The features of the noise channel are as follows:
+
+  1) 29.3 Hz to 447 KHz
+  2) Noisy sounds
+
+On to the registers!
+
+The Registers
+a.k.a Donde vas con este?
+
+  The Noise Channel registers are at $400C-$400F; the noise channel is enabledwith (setting to 1) bit #3 of $4015. Let's see what they do! :)
+
+$400C
+  Register $400C is the same as $4000, except bits #6-7 are unused.
+
+$400D
+  Register $400D is totally unused.
+
+$400E
+  Register $400E controls how fast the frequency goes from random frequency to random frequency or something like that, I'm not sure. The sound doc describes it as "playback sample rate". The bits are:
+
+  Bits #0-3 (a.k.a the first hex digit): "playback sample rate".
+  Bits #4-6 : unused. Can stay zero (0).
+  Bit  #7 : "random number type generation", as far as I can tell a 1 is higher sounding noise, a 0 is lower sounding noise. Since this is bit #7 and Bits #4-6 are unused, we can just make a 0 or a 1 be the second hex digit.
+
+$400F
+  Register $400F is the same as $4003 (except first 3 bits are unused), I just write whatever to it. You can still write #$AB to it if you want, I guess.
+
+  If you really want to know, I'm not sure what it means, but bits #3-7 are the "length counter load value". This may or may not have something to do with the frequency.
+
+$4015
+  To enable the Noise Channel, set bit #3 in $4015. Like so:
+
+  lda #%00001000
+  sta $4015
+
+The Full Code
+  Again, I'll make a full code listing just because I'm way too much of
+a nice guy. Here it is:
+
+;;---CODE START---;;
+
+  .inesprg 1
+  .inesmap 0
+  .inesmir 1
+  .ineschr 0  ; note that we have no CHR-ROM bank in this code
+  
+  .bank 1
+  .org $FFFA
+  .dw 0 ; no VBlank routine
+  .dw Start 
+  .dw 0 ; we'll get to this at a later time
+
+  .bank 0
+  .org $8000
+; note that I just copy/pasted code from the register sections
+Start:
+  lda #$FF   ; Like $4000 we just write all 1s 'cause
+  sta $400C  ; we don't mind all the stuff in there being "on".
+
+  lda #$50   ; play rate of 5 (5), lower sounding mode (0)
+  sta $400E
+
+  lda #$AB
+  sta $400F
+
+  lda #%00001000  ; enable Noise Channel
+  sta $4015
+
+infinite:
+  jmp infinite
+
+  ;;--- END OF CODE FILE ---;;
+
+Assemble and Listen! That code is just a modified version of the previous code file in Day 14. This code sounds like static, I realize thats what the Noise Channel does, but I mean this really sounds like radio or TV static (sorta). It could also be water if you stretch your imagination a little.
+
+This Day In Review
+
+  Hope you liked that, The DMC Channel will happen when I figure it out. So there. Hope you have fun with that! :)
+
+Also, be sure to read through the sound doc for all the complete tech info.
+
+  
+
+Day 16 - Bit Masking/Toggling
+
+
+
+Masking 
+
+  Before we begin, there's something very important to remember: You can only do math and bit operations on the A register. There are no math and bit operation instructions for the X and Y registers.
+
+  Masking, as in clearing certain bits while leaving the others intact. This is done (atleast alot of the time) with the AND instruction. The syntax is like this:
+
+  and (number or memory)
+
+Say we want to clear the last 4bits of A, but leave the others intact:
+
+  and #$F0
+
+Remember ANDing a bit with 1 will give the same value that you started with, and ANDing with 0 will always have an answer of 0, since the AND logic table is like this:
+
+    AND Table
+  -----------------------------
+  Start  | ANDed with | Result
+  -----------------------------
+          0    |     1      |   0
+    0    |     0      |   0
+    1    |     0      |   0
+    1    |     1      |   1
+
+
+
+It's OK if you already knew that, the tables today are for the people who are
+going to have to figure out all this bit logic stuff (ANDs, ORs, XORs, NOTs) on their own because they haven't used ASM before encountering the NES.
+
+  Alright, now your probably wondering (maybe) how hex maps out to binary. (HEX to BINARY conversion). Here's a table of hex digits:
+
+    Hex 2 Binary
+  ---------------------------------
+    0 |    0000
+    1 |    0001
+    2 |    0010
+    3 |    0011
+    4 |    0100
+    5 |    0101
+    6 |    0110
+    7 |    0111
+    8 |    1000
+    9 |    1001
+    A |    1010
+    B |    1011
+    C |    1100
+    D |    1101
+    E |    1110
+    F |    1111
+
+So now you know (if you couldn't already) how to convert each hex digit to binary. So #$0F becomes #%00001111 . The percent is the symbol
+NESASM.exe uses for binary numbers.
+
+  Now what if you only want to mask certain bits out (to 0). You might want to do the AND instruction in binary. What ever bits you make 0 will be 0 when the AND is complete, and whatever bits are 1 will make the corresponding bit in the A register stay the same (wether it be 1 or 0). Example:
+
+  ;we want to make bits #3 and #7 clear (0). Remember to count bits
+  ; from #0 on far right.
+  and #%01110111
+
+Note the underlined '0's, the corresponding bits in A will be '0's, but everything else will remain unchanged.
+
+  Now, what if we wanted to mask bits to be set (change to a 1). Then we would have to use OR. Take a look at the OR table below:
+
+    OR Table
+  -----------------------------
+  Start  | ORed with | Result
+  -----------------------------
+          0    |     1      |   1
+    0    |     0      |   0
+    1    |     0      |   1
+    1    |     1      |   1
+
+
+
+You should see that AND's result is 1 if BOTH inputs are 1. OR's result is 1, if one or both inputs are 1.
+
+  To set individual bits to 1 (I don't actually know why you'd want to do this, but the method I tell DOES work), you just OR with 1. The bits you don't want to change, you OR with 0. So to set bits #6 and #4 of A to 1 , we would go like this:
+
+  ora #%01010000
+
+Note that the instruction for OR is ORA, I guess it's like semi-traditional to have 3 letter ASM instructions. I hope you understood that, we OR the bits we want set to 1 with 1 and the bits we want to leave alone with 0.
+
+Also note that the NES is a 8bit system so we need all 8bits in our binary numbers. If you don't put all 8bits in, I think NESASM will interpret it as having 0's on the left as in being the number you think it'll be, but I'm not sure about this, you might need all 8bits.
+
+Toggling
+
+  First of all, let's define toggling. Toggling is switching between 0 and 1. The method shown here is useful for toggling bits on (1) and off (0) with one instruction if you execute that instruction repeatedly.
+
+  To toggle bits, you need the XOR. Here's a table for XOR:
+
+    XOR Table
+  -----------------------------
+  Start  | XORed with | Result
+  -----------------------------
+          0    |     1      |   1
+    0    |     0      |   0
+    1    |     0      |   1
+    1    |     1      |   0
+
+XOR only results in 1 if one (not both) of the inputs is 1. So XORing with a 1 will toggle the bit (and XORing with 0 will make a bit stay the same). The syntax of XOR is:
+
+  eor (number or memory)
+
+Note that the instruction for XOR is EOR. The thing is that they both stand for (Exclusive OR (EOR)) or XOR (eXclusive OR). So if we wanted to toggle bits #1 and #6:
+
+  eor #%01000010
+
+XORing with 0 will make the bit stay the same, but XORing with 1 will make the bit opposite of what it is.
+
+This Day In Review
+
+  I seriously hope you learned something today. Toggling and Masking bits is fun! Have fun!
+
+  
+Day 17 - The Sprite Attribute Byte
+
+
+
+The What? 
+
+  The Sprite Attribute Byte (SAB) is the third (of 4bytes) byte that you write to OAM (SPR-RAM). This byte controls several (4) things including:
+
+   Bits 0-1: 2 Bits of the sprites colors. Will be discussed at a later time.
+   Bits 2-4: UNUSED.
+   Bit #5: 0 = Sprite in front or 1 = Sprite in back of BG.
+   Bit #6: 1 = Flip horizontally.
+   Bit #7: 1 = Flip vertically.
+
+See's see how to do this!
+
+Gettin' Goin'
+
+When I demonstrate each bit (with code peices) I'll give 2 pieces, of
+code, one for the $2003/$2004 method and one for the Sprite#-BYTE (DMA) method.
+
+  To flip a sprite horizontally, you just need to set bit #6 of the special byte of OAM data (the third byte written). Assuming you have your special byte in A (you have to, to be able to do bit operations & math):
+
+ eor #%01000000  ; will toggle bit #6 in A.
+ sta $2004       ; this assumes that you already entered 2 bytes to $2004
+
+Now the DMA method:
+
+lda Sprite1_S
+eor #%01000000
+sta Sprite1_S ; need to store it back so next time the correct thing happens.
+sta $2004
+
+As you see, it's not much different.
+To flip a sprite vertically, you need to toggle bit #7 of the special byte.
+
+Gettin' Goin'
+
+  Putting sprites behind backgrounds is always cool if you do it right,
+like the Warp Whisle (Whistle?) in Super Mario Bros. 3 ((c)1988? Nintendo, wow I was 1 year old in 1988...) you have to get BEHIND the background and make to the end of the stage to get the whisle, remember that?
+
+  Well, Bit #5 of the special byte is probably how that was done. Just make Bit #5 a 1 to have your sprite be drawn under/behind the background. Example of toggling bit #5:
+
+  eor #%00100000
+
+That will toggle bit #5, so you can use that instead of the eor in the previous code.
+
+
+
+One Last Thing
+  
+Remember that you can always toggle more than one bit at a time.
+
+
+
+Day 18 - BG Scrolling
+
+
+
+How? 
+
+  I had already done some experimenting to see how exactly background scrolling works. It appears that (without a mapper) you can only scroll in the direction that you are (possibly aren't?) having mirroring (the ".inesmir 1" we always use).
+
+Registers?
+  The background scroll port is $2005, I call it a port instead of a
+register because, even though it takes 2 writes, those two writes aren't used as one big number like in other registers and do two different things.  
+
+  The first write to $2005 will be the vertical scroll and the second
+write will be the horizontal scroll (according to Fayzullin's doc).
+
+Some things...
+  Unless you set-up your cartridge (.NES file) to have the 2Kb needed to use all 4 Name Tables (which I don't yet know how to do), it seems that you can only scroll a certain way. If anyone knows how it scrolls vs. mirroring or how to use all 4 Name Tables, please E-Mail me.
+
+  You will know that you are possibly scrolling the wrong way if the background moves funky or possibly disappears (happened to me).
+
+No Code?
+
+  I'd like for you people to actually try and do it yourselves, if you do, feel free to send me some code. I know that you can do it, you have all the info you need.
+
+If enough people complain or even if enough people send me code, I'll put my code up here...
+
+  Seriously, you can do it. The basic things you need are:
+    1. Variables for Vertical and Horizontal scroll.
+    2. Have atleast a simple background displayed.
+    3. Handle keypad presses (up,down,left,right).
+    4. Write vert. and hori. scroll to $2005
+    
+This Day In Review
+  
+I've decided that tomorrow will definitely be about loading
+up to like 64KB easily (we will use the method to load the Zelda 
+title screen (1KB)).
+  
+  Day 19 - Easy Large Loads
+
+
+
+What? 
+
+  Today, we will use a new loading loop that utilizes indirect addressing to load a lot of data at a time. The data we will load will be the Zelda title screen, and yes, today will include all of the code. I've included the 3 necessary data files in nesasm.zip. Please redownload it, I could have sworn that I already had them in there... sorry for any inconveniece.
+
+Indirect Addressing?
+  Yep, indirect addressing (which is hard for me to type for some reason...) is simply getting an address from the contents of another address, so say we wanted to get a value from an address contained at $0010-$0011 (16-bit address, remember that). 
+
+But first a little review (I hope), vocab lesson #whatever:
+Take the address $8000, $00 is the high byte and $80 is the low byte, got it?
+(I might have that backwards, I have bronchitis at the moment...)
+
+The low byte would be in $10 and the high byte in $11 (note that I use two
+digits only, because the first 2 in the address are zero). So assuming the address that we really want to load from is $82C5 which is at $10-$11, to load the byte at $82C5 into the A register, we would do:
+
+  lda [$10]
+
+this can also be indexed, like so:
+
+  lda [$10], y
+
+what this would do is take the address $82C5, add the contents of Y to that address (the address not the contents), and get byte at the resulting address.
+
+I hope you understood all that, because it's just going to get more confusing.And just a short joke before we continue:
+
+Surgeon General's Warning:
+Attempting to understand the ASM Code in the
+following sections of this document may cause
+the reader to either increase their ASM skills
+or drive them to suicidal frustration.
+
+
+
+
+
+
+
+
+
+
+The Loop
+
+  I think, therefore I am? no. I think therefore I'll give the complete
+loop and explain it in pieces. Assume backg is the label of where a bunch of
+name table data is included, also assume $2006 is pointing to $2000:
+
+  lda #low(backg)
+    sta $10
+    lda #high(backg)
+    sta $11
+
+  ldx #4  
+    ldy #0
+loop:
+    lda [$10],y
+    sta $2007
+    iny
+    bne loop
+    inc $11 
+    dex
+    bne loop
+
+The first piece:
+  lda #low(backg)
+    sta $10
+    lda #high(backg)
+    sta $11
+
+low() and high() are built in instructions for NESASM.exe that take the high and low bytes of an address, in this case, backg.
+
+Note that $10 and $11 memory addresses are consecutive, it has to be that way, but they could be any consecutive addresses.
+
+The second:
+  ldx #4  
+    ldy #0
+loop:
+
+; X controls how many chunks of 256 bytes to load in this case, 4. Y must be ; 0 (zero).
+
+The third:
+  lda [$10],y
+    sta $2007
+    iny
+    bne loop
+
+This part loads 256 bytes to $2007 using indirect addressing indexed by Y.
+Note that the registers (A,X,Y) wrap around so adding 1 to #$FF will make
+the register contain #$00. And that's how this works, because when Y is incremented to #$00, the loop will be done loading the 256 byte chunk.
+
+
+
+
+
+The last:
+
+  inc $11 
+    dex
+    bne loop
+
+This part increments the high byte of the address of the data to the next 256 byte chunk. It also counts down 1 in the X register which contains the amount of chunks left, if X is zero, it won't loop and we're done loading everything.
+
+That went better than I expected...
+
+The Full Code File
+
+Before I give you the full code file (fully commented, of course), make sure
+you have those 3 files in your code folder.
+
+;--- CODE START ---;
+  .inesmir 1
+  .inesmap 0      ; INES header $H!7.
+  .ineschr 1
+  .inesprg 1
+
+  .bank 1
+  .org $FFFA  ; vector table
+  .dw 0
+  .dw Start
+  .dw 0
+
+  .bank 0
+  .org $0010
+addrLO: .db 0  ; make "variable"s for our indirect addressing
+addrHI: .db 0
+
+  .org $8000
+Start:
+  
+  ldx #0
+  lda #$20  ; set the destination address in PPU memory
+    sta $2006  ; should be $2000
+    stx $2006
+    lda #low(backg)   ; put the high and low bytes of the address "backg"
+    sta addrLO        ; into the variables so we can use indirect addressing.
+    lda #high(backg)
+    sta addrHI
+
+  ldx #4  ; number of 256-byte chunks to load
+    ldy #0
+loop:
+    lda [addrLO],y
+    sta $2007     ; load 256 bytes
+    iny
+    bne loop
+;--------------------
+    inc addrHI  ; increment high byte of address backg to next 256 byte chunk
+    dex        ; one chunk done so X = X - 1.
+    bne loop   ; if X isn't zero, do again
+  
+
+
+    lda #$3F
+    sta $2006
+    lda #$00    ; point $2006 to the pallete
+    sta $2006
+    ldx #$00
+
+palload:
+    lda tilepal, X     ; use a simple load of 32 bytes.
+    inx
+    sta $2007
+    cpx #32
+    bne palload
+
+    jsr turn_screen_on  ; call subroutine to turn on / setup the PPU.
+
+infin:              ; our infinite loop
+    jmp infin
+
+turn_screen_on:
+    ; Setup the PPU
+    lda #%00001000
+    sta $2000
+    lda #%00011110
+    sta $2001
+    rts
+
+tilepal: .incbin "zelda.pal" ; include the pallete
+backg: .incbin "zelda.nam" ; include the name table data
+
+    .bank 2
+    .org $0000
+    .incbin "zelda.chr"  ; include the picture data in the background part
+                         ; of the CHR-BANK (#2)
+;;--- CODE END/ END OF FILE ---;;
+
+I hope you got all that and that it works (I did some modifications from my
+testing file).
+
+This Day In Review
+
+  I thought that was fun. Day 20 could be anything, maybe Attributes,
+maybe a lesson on the conditional branches.
+
+  
+
+
+
+
+
+
+
+
+
+

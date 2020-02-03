@@ -1,0 +1,905 @@
+-==============================================-
++Programming that 8-bit beast of power, the NES+
++By joker21@earthlink.net v.80.666             +
+-==============================================-
+
+Don't Panic
+------------
+This document should help you learn how to program the NES. It better.
+Didn't waste all this time for nothing. You really should use this
+in conjunction with the docs that I have included. Some information
+is omitted or only touched on because it is mentioned in more detail
+somewhere else. The only thing about coding using emulators is that
+some times your code will work for one emulator but not for another.
+I don't know why that happens. Nesticle runs just about anything you
+throw at it but some of the more realistic emulators won't run your
+code if it isn't proper code.
+
+The formatting should also allow you to print this document with
+a minimal amount of hassle. You may have to adjust margins though.
+
+Also, if you get this somewhere besides my site, it may not be in the
+zip file. You need to go to:
+http://home.earthlink.net/~joker21
+I'll update the page and zip file when I update this doc. 
+
+Tools
+--------
+
+1. Nes Assembler(Compiles 6502 assembly into NES roms)
+-Required. If you don't have this, then you're pretty much screwed. 
+Well, no not really. NES programs can be compiled using TASM(Not the
+Borland one) but its a pain in the ass.
+
+2. NES Screen Arranger(Name Table editor)
+-Not required but it makes making editing title screens and such ALOT 
+easier.
+
+3. Tile Layer(Edit graphics)
+-Pretty much required. You can use Nesticle but its a lot more complex.
+
+4. Nes Emulator
+-Required. How else are you gonna play your ROM? You'll be wanting one 
+that has code trace, pattern table viewer, palette viewer, stuff like
+that. Nesticle works okay but there are better emulators out there.
+
+I've included most of these tools. And a bunch of docs about the NES.
+I'm telling you, get that zip file!
+Good luck!
+
+Need to Know
+----------------
+You need to know 6502 assembly. Also, you need Y0SHi's NES doc. This
+thing is VERY useful. Print it out, a hard copy is a must. You might
+also want Marat Fayzullin's NES document. And Chris Covell's NES Tech
+FAQ is good too. So much information!
+
+Stuff to do before B.C.(Before Coding. Witty, huh?)
+----------------------------------------------------
+Some things just gotta be done before you can start coding. Now, since 
+we're use NESASM, the first thing you need is INES header setup table. 
+This should go at the front of your program. This pretty much tells 
+NESASM how to setup the INES header in your NES ROM.
+
+; INES header setup
+        .inesprg    1
+        .ineschr    1
+        .inesmir    1
+        .inesmap    0
+
+Right from the NESASM usage.txt is what each '.ines' thing means.
+
+.INESPRG - Specifies the number of 16k prg banks.
+.INESCHR - Specifies the number of 8k chr banks.
+.INESMAP - Specifies the NES mapper used.
+.INESMIR - Specifies VRAM mirroring of the banks.
+
+The example header shown is for a program with (1)16k code bank, 
+(1)8k character bank, Vertical mirroring, and no mapper(0) used. This 
+setup will work...for now(creepy music, evil laugh)!!
+
+The Vector table are a set of three addresses that are stored in a
+certain memory location in the NES ROM($FFFA to be exact). Here's an example:
+
+      .bank 1                 ;needed or NESASM gets cranky
+      .org  $FFFA         ;ditto
+      .dw         ;NMI_Routine($FFFA)
+      .dw         ;Reset_Routine($FFFC)
+      .dw         ;IRQ_Routine($FFFE)
+
+NMI_Routine means Non-Maskable Interrupt. This address is called 
+different times on different systems(PAL/NSTC). Its called every 
+VBlank(screen refresh). Nesticle does trace this when using its 
+code trace. Choose CPU->Debug->Vint to jump to the NMI code.
+
+The Reset_Routine is jumped to when the game is powered up and when it
+is reset. When the game is reset, the NES _does not_ clear the memory
+nor the registers. I guess so programmers can count how many times the
+game has been reset. On a more serious note, this can could cause
+problems if you're not careful with how you store and read data.
+
+Finally, the IRQ_Routine is the address that is jumped to when a BRK
+instruction is hit. I have no idea how you could use this. Maybe for
+error checking or something(shrug).
+
+You don't need to have actual values for these addresses. Well, you do
+for address $FFFC since it does tell the NES were your code is. If you
+don't use it, turn NMI($FFFA) off(more on that later) and put a 0 as
+the address. You don't even need to put a value in $FFFE, just make
+sure there are no BRK instructions.
+
+So far for our ROM we have:
+-------------------------------------------------------------------
+    !The Header!
+
+        .inesprg    1
+        .ineschr    1
+        .inesmir    1
+        .inesmap    0
+
+    !The Vector Table!
+      .bank 1
+  .org  $FFFA
+  .dw   NMI (NMI_Routine)
+  .dw   Start (Reset_Routine)
+  .dw   IRQ (IRQ_Routine)
+-------------------------------------------------------------------
+
+Coding!
+---------
+Okay, one little thing before coding. The code must '.org' at $8000
+or $C000 and it must be in bank 0. I'm pretty sure this is right. All
+my stuff is going to use bank 0 and $8000 but that's just me. 
+
+Here's what the program should look like now:
+-------------------------------------------------------------------
+;This will compile! Try it!
+
+    ;!The Header!
+
+        .inesprg    1
+        .ineschr    0 ;this is 0 b/c we have no chr data...yet
+        .inesmir    1
+        .inesmap    0
+
+  .org $8000
+  .bank 0
+
+    
+Start:
+    ;!Code Goes Here!
+
+  jmp Start
+
+    ;!The Vector Table!
+      .bank 1
+  .org  $FFFA
+  .dw   0 ;(NMI_Routine)
+  .dw   Start ;(Reset_Routine)
+  .dw   0 ;(IRQ_Routine)
+-------------------------------------------------------------------
+
+Wow! This program does two things well; nothing and not a damn thing.
+What it really does is simply go into an infinite loop. We need that
+infinite loop because the NES will keep going and end up trying to
+execute garbage instructions. Its a start though! Now, let's show some
+pretty pictures.
+
+Graphics
+----------
+Showing graphics on the NES is composed of CHR-ROM, PPU control, the
+palette(the colors! THE COLORS!!!!), and some other fun things.
+
+The PPU
+--------
+Before we can really do anything graphic wise, we need to write to the
+PPU control registers.
+
+-Start Note-
+The NES has a bunch of control registers. They are just certain memory
+addresses that you write data to. The data that you write(sometimes 
+read) to each register will make the NES do certain things. The data
+the you write to the PPU control register tells the NES what attributes
+to set for the PPU. See y0shi's NES doc for more info on all the
+registers and what they do.
+-End Note-
+
+Writing to the register is not as hard as it sounds. Basically you just
+write a byte to both memory locations $2000 and $2001.
+Here's an example:
+
+  lda #%00001000     
+  sta $2000          
+  lda #%00011110 
+  sta $2001
+
+Now, looking at our NES doc, we see that each bit written to $2000 and
+$2001 does something special. Let's let our nestech.doc explain.
+
+      #%00001000
+      D-76543210  
+
++---------+----------------------------------------------------------+
+|  $2000  | PPU Control Register #1 (W)                              |
+|         |                                                          |
+|         |    D7: Execute NMI on VBlank                             |
+|         |           0 = Disabled                                   |
+|         |           1 = Enabled                                    |
+|         |    D6: PPU Master/Slave Selection --+                    |
+|         |           0 = Master                +-- UNUSED           |
+|         |           1 = Slave               --+                    |
+|         |    D5: Sprite Size                                       |
+|         |           0 = 8x8                                        |
+|         |           1 = 8x16                                       |
+|         |    D4: Background Pattern Table Address                  |
+|         |           0 = $0000 (VRAM)                               |
+|         |           1 = $1000 (VRAM)                               |
+|         |    D3: Sprite Pattern Table Address                      |
+|         |           0 = $0000 (VRAM)                               |
+|         |           1 = $1000 (VRAM)                               |
+|         |    D2: PPU Address Increment                             |
+|         |           0 = Increment by 1                             |
+|         |           1 = Increment by 32                            |
+|         | D1-D0: Name Table Address                                |
+|         |         00 = $2000 (VRAM)                                |
+|         |         01 = $2400 (VRAM)                                |
+|         |         10 = $2800 (VRAM)                                |
+|         |         11 = $2C00 (VRAM)                                |
++---------+----------------------------------------------------------+
+Let's go into a little more detail:
+
+D5 sets the sprite size. 0 is 8 pixels by 8 pixels. 1 is 8 pixels by 16
+pixels. If its set to 0, sprites are just one 8x8 entry on the
+pattern table. Setting it to 1 uses two entries(8x16) on the pattern table.
+           _             _
+i.e. 8x8 =[_]     8x16 =[ ]
+                        [_]
+
+D4 sets the address that is used for the screen(background). Writing 0
+sets the address to $0000. This means that the NES is using the data in
+pattern table 1 for background graphics. Writing 1 sets the address to
+$1000. Address $1000 is the 2nd pattern table.
+
+D3 sets the sprite address. Writing 0 sets the address to $0000. This
+means that the NES uses the data in pattern table 1 for sprites. Setting
+it to 1 means that the NES uses $1000 for sprites. Address $1000 is
+pattern table 2.
+
+-Start Note-
+You usually don't want the sprite data to be the background data too.
+That means that the NES uses that same pattern table for both sprites
+and backgrounds. It could get confusing.
+-End Note-
+
+D2 sets how much to increment PPU writes/reads. If its 0 then the PPU
+point is increased by 1 each write/read. If its 1 then its increased
+by 32. I can't remember why you would want to increase it by 32. Sure
+there's a reason...It is for games that want to write a whole column of
+tiles on one side of the screen as it is scrolling. -Chris
+
+D1-D0 sets which name table you want to use. Now, it may seem like you
+have 4 choices for name tables but you don't. Name table 1 is mirrored
+to name table 3 and name table 2 is mirrored to name table 4. Name
+tables are the backgrounds to games and such.
+
+What about $2001? Well, again nestech.doc comes to the rescue. With
+help from the NES Tech FAQ by Chris Covell.
+ 
+      #%00011110 
+      D-76543210  
+
++---------+----------------------------------------------------------+
+|  $2001  | PPU Control Register #2 (W)                              |
+|         |                                                          |
+|         | D7-D5: Full Background Colour (when D0 == 1)             |
+|         |         000 = None  +------------+                       |
+|         |         001 = Green              | NOTE: Do not use more |
+|         |         010 = Blue               |       than one type   |
+|         |         100 = Red   +------------+                       |
+|         | D7-D5: Colour Intensity (when D0 == 0)                   |
+|         |         000 = None            +--+                       |
+|         |         001 = Intensify green    | NOTE: Do not use more |
+|         |         010 = Intensify blue     |       than one type   |
+|         |         100 = Intensify red   +--+                       |
+|         |    D4: Sprite Visibility                                 |
+|         |           0 = Sprites not displayed                      |
+|         |           1 = Sprites visible                            |
+|         |    D3: Background Visibility                             |
+|         |           0 = Background not displayed                   |
+|         |           1 = Background visible                         |
+|         |    D2: Sprite Clipping                                   |
+|         |           0 = Sprites invisible in left 8-pixel column   |
+|         |           1 = No clipping                                |
+|         |    D1: Background Clipping                               |
+|         |           0 = BG invisible in left 8-pixel column        |
+|         |           1 = No clipping                                |
+|         |    D0: Display Type                                      |
+|         |           0 = Colour display                             |
+|         |           1 = Monochrome display                         |
++---------+----------------------------------------------------------+
+Most of this is pretty easy to understand. But here's some more detailed
+info on some of the registers from The NES Tech FAQ:
+
+-What are the colour emphasis bits?
+
+     This is almost the final frontier of NES emulation, as not many
+emulators handle these bits properly. The top 3 bits of $2001 are known
+as the "Colour Emphasis Bits" because each bit modifies the R, G, or B
+colour component of the NES' display. The bits look like this in $2001:
+BGRxxxx. If you set one of these bits, the entire palette changes
+dynamically towards the colour component selected in the bits. If you
+set the Red bit, the entire palette seems much more "red". However, since
+the NES does not work in RGB, what seems to be happening is that the hue
+of all the colours in the display are more influenced towards the hue
+that is being emphasized. Another thing to note is that if the Red bit
+is set, for example, the palette entries that have a large amount of
+cyan (red's negative) in them are darkened considerably.
+
+     You can combine each of the emphasis bits as well. Setting both
+the R and G bits emphasizes the yellow in the palette, and so on.
+However, when any two bits are set, the entire palette is dimmer than
+normally. Thus, the emphasis seems more like "de-emphasis". I really
+believe that when you set the R bit, for example, to emphasize red,
+what is really occurring is a widespread de-emphasis of cyan. My
+suspicions are confirmed further because when you set all three of
+the colour emphasis bits, the entire palette dims to 75% of its
+original brightness. The game Super Spy Hunter does this very thing
+with the emphasis bits when you pause the game.
+
+-What is the monochrome mode in the NES?
+
+     Bit 0 of $2001 is funny. When it is set, the entire palette goes
+greyscale. However, it is not a simple greyscale mode. For one, there
+is no black value when the monochrome bit is set. In fact, what
+technically occurs is that when the monochrome bit is set, the 64-value
+palette in the NES is reduced to simply a 4-value palette. All palette
+entries from $01 to $0F are mirrored to entry $00; all entries from $11
+to $1F are mirrored to $10; all entries from $21 to $2F are mirrored to
+$20; and finally, all entries from $31 to $3F are mirrored to $30. This
+is also shown to be true because if you set the monochrome bit and some
+of the colour emphasis bits, the display still gets skewed to the colour
+being emphasized.
+
+Adding CHR-ROM
+----------------
+Okay, now that you know about using the PPU, its time to learn how to
+add CHR-ROM so you have something to look at. Looking at the header,
+we see:
+
+        .inesprg    1
+        .ineschr    0
+        .inesmir    1
+        .inesmap    0
+
+Now, that 0 is telling NESASM that we have 0 banks of CHR-ROM. Every time
+you add a bank of CHR-ROM, you need to increase that value by one. Since
+we're only going to have 1 bank of data just change that 0 to a 1.
+
+        .inesprg    1
+        .ineschr    1
+        .inesmir    1
+        .inesmap    0
+
+We're not done yet. Now we have to add the actual CHR-ROM to the rom
+and load it into the pattern table. Which is easily added like this:
+
+    .bank 2
+    .org    $0000
+    .incbin "test.chr"  ;gotta be 8192 bytes long
+
+Since there is only one chunk of CHR-ROM, we place it at address $0000.
+Address $0000 is where the NES starts to look for character data.
+CHR-ROM goes from $0000 to $2000 in the NES ram and is called the
+pattern table. Hence the 8192 byte length of test.chr. I'm not sure how
+to switch CHR-ROM from different banks without using a mapper. Checkout
+y0shi's old NES doc or \Firebug\'s mapper.nfo doc. Good stuff.
+I did come up with a code workaround though. It will be discussed later.
+But let's look at the code we got going so far:
+----------------------------------------------------------------
+        .inesprg    1
+        .ineschr    1
+        .inesmir    1
+        .inesmap    0
+
+  .org $8000
+  .bank 0
+
+Start:
+  ;this setups the PPU
+  lda #%00001000     
+  sta $2000          
+  lda #%00011110 
+  sta $2001
+
+Loop:
+  jmp Loop
+
+      .bank 1
+  .org  $FFFA
+  .dw   0 ;(NMI_Routine)
+  .dw   Start ;(Reset_Routine)
+  .dw   0 ;(IRQ_Routine)
+
+    .bank 2
+    .org    $0000
+    .incbin "test.chr"  ;gotta be 8192 bytes long
+---------------------------------------------------------------
+
+We're not done yet though. If you run this code, you'll get nothing but
+a blank screen. That's because we haven't told the NES about the
+palette. Which brings us to our next section!
+
+The Palette
+------------
+The palette starts at $3F00 and goes to $3F1F in the VRAM. From $3F00
+to $3F0F is the image(background) palette. From $3F10 to $3F1F is the
+sprite palette. This gives you 2 palettes that are 16 bytes each. The
+most important address in the palette is $3F00. The value that is
+written here defines background colour, transparency for both background
+and sprites, and is mirrored every 4 bytes. This means that $3F04,$3F08,
+$3F0C, $3F14, $3F18, are just mirrors of $3F00. Writing to these places
+does nothing. Ready to learn how to write to the palette? Let's go!
+
+Writing to the palette involves the use of registers $2006 and $2007.
+You can't write/read directly to the VRAM. Instead, you write the VRAM
+address of where you want to write/read to register $2006 and use
+register $2007 to write/read data. First you would write the high byte
+to $2006 then the low byte. To point the register at the palette($3F00),
+you would first write #$3F then #$00. Like this:
+
+        lda #$3F        ;set to start of palette
+        sta $2006       
+        lda #$00        
+        sta $2006
+
+Now you can write to the palette by writing to register $2007. Just
+write 32 bytes to register $2007 and you got your palette. Let's look
+at the code we got so far:
+--------------------------------------------------------------
+        .inesprg    1
+        .ineschr    1
+        .inesmir    1
+        .inesmap    0
+
+  .org $8000
+  .bank 0
+
+Start:
+
+  ;this sets up the PPU
+  lda #%00001000     
+  sta $2000          
+  lda #%00011110 
+  sta $2001
+
+  ;set to start of palette
+        lda #$3F
+        sta $2006
+        lda #$00
+        sta $2006
+
+  ;these are the writes that setup the palette
+        lda #$01
+        sta $2007
+        lda #$02 
+        sta $2007
+        lda #$03
+        sta $2007
+        lda #$04
+        sta $2007
+        lda #$05
+        sta $2007
+        lda #$06
+        sta $2007
+        lda #$07
+        sta $2007
+        lda #$08
+        sta $2007
+        lda #$01     ;stop here
+        sta $2007
+        lda #$08
+        sta $2007
+        lda #$09
+        sta $2007
+        lda #$0A
+        sta $2007
+        lda #$01
+        sta $2007
+        lda #$0B
+        sta $2007
+        lda #$0C
+        sta $2007
+        lda #$0D
+        sta $2007
+        lda #$01    ;Start sprite colors
+        sta $2007
+        lda #$0D
+        sta $2007
+        lda #$08
+        sta $2007
+        lda #$2B
+        sta $2007
+        lda #$01
+        sta $2007
+        lda #$05
+        sta $2007
+        lda #$06
+        sta $2007
+        lda #$07
+        sta $2007
+        lda #$01
+        sta $2007
+        lda #$08
+        sta $2007
+        lda #$09
+        sta $2007
+        lda #$0A
+        sta $2007
+        lda #$01
+        sta $2007
+        lda #$0B
+        sta $2007
+        lda #$0C
+        sta $2007
+        lda #$0D
+        sta $2007
+
+Loop:
+  jmp Loop
+
+      .bank 1
+  .org  $FFFA
+  .dw   0 ;(NMI_Routine)
+  .dw   Start ;(Reset_Routine)
+  .dw   0 ;(IRQ_Routine)
+
+    .bank 2
+    .org    $0000
+    .incbin "test.chr"  ;gotta be 8192 bytes long
+-----------------------------------------------------------------
+
+Damn. That code is so ugly it hurts my feelings. Let's make it a little
+less nasty, shall we?
+Like this:
+----------------------------------------------------------------
+        .inesprg    1
+        .ineschr    1
+        .inesmir    1
+        .inesmap    0
+
+  .org $8000
+  .bank 0
+
+Start:
+
+  ;this sets up the PPU
+  lda #%00001000     
+  sta $2000          
+  lda #%00011110 
+  sta $2001
+
+        lda #$3F        ;set ppu to start of palette
+        sta $2006       
+        lda #$00        
+        sta $2006 
+  ldx #$00
+
+loadpal:
+  lda titlepal, x  ;loads a 32 byte palette
+  sta $2007
+  inx
+  cpx #$20      ;gotta be one extra b/c of inx
+  bne loadpal
+
+Loop:
+  jmp Loop
+
+titlepal: .incbin "test.pal"  ;palette data
+
+      .bank 1
+  .org  $FFFA
+  .dw   0 ;(NMI_Routine)
+  .dw   Start ;(Reset_Routine)
+  .dw   0 ;(IRQ_Routine)
+
+    .bank 2
+    .org    $0000
+    .incbin "test.chr"  ;gotta be 8192 bytes long
+------------------------------------------------------------------
+
+What I did was get rid of that ugly mess and use a loop. The loop loads
+the data that is included in test.pal and then writes it to $2007. It
+does this until the counter(x) gets to #$20 and then continues the
+program. Test.pal is an external file that is 32 bytes of palette data.
+Makes it easier to edit colors and stuff. We got the palette down, the
+PPU under control, that nasty CHR-ROM in there. Ready to start putting
+shit on the screen? Of course you are!
+
+Name Tables!
+-------------
+Y0SHi says it best:
+The NES displays graphics using a matrix of "tiles"; this grid is called
+a Name Table. Tiles themselves are 8x8 pixels. The entire Name Table
+itself is 32x30 tiles (256x240 pixels). Keep in mind that the displayed
+resolution differs between NTSC and PAL units. The Name Tables holds
+the tile number of the data kept in the Pattern Table.
+
+      +---------+-------+-------+--------------------+
+      | Address | Size  | Flags | Description        |
+      +---------+-------+-------+--------------------+
+      | $2000   | $3C0  |       | Name Table #0      |
+      | $23C0   | $40   |  N    | Attribute Table #0 |
+      | $2400   | $3C0  |  N    | Name Table #1      |
+      | $27C0   | $40   |  N    | Attribute Table #1 |
+      | $2800   | $3C0  |  N    | Name Table #2      |
+      | $2BC0   | $40   |  N    | Attribute Table #2 |
+      | $2C00   | $3C0  |  N    | Name Table #3      |
+      | $2FC0   | $40   |  N    | Attribute Table #3 |
+      +---------+-------+-------+--------------------+
+        N = Mirrored
+
+In addition to name tables, there are also attribute tables. Again, I'll
+let Y0SHi talk about it:
+
+Each byte in an Attribute Table represents a 4x4 group of tiles on the
+screen. There's multiple ways to describe what the function of one (1)
+byte in the Attribute Table is:
+
+      * Holds the upper two (2) bits of a 32x32 pixel grid, per 16x16 pixels.
+      * Holds the upper two (2) bits of sixteen (16) 8x8 tiles.
+      * Holds the upper two (2) bits of four (4) 4x4 tile grids.
+
+    It is rather confusing; two graphical diagrams may help:
+
+      +------------+------------+
+      |  Square 0  |  Square 1  |  #0-F represents an 8x8 tile
+      |   #0  #1   |   #4  #5   |
+      |   #2  #3   |   #6  #7   |  Square [x] represents four (4) 8x8 tiles
+      +------------+------------+   (i.e. a 16x16 pixel grid)
+      |  Square 2  |  Square 3  |
+      |   #8  #9   |   #C  #D   |
+      |   #A  #B   |   #E  #F   |
+      +------------+------------+
+
+The actual format of the attribute byte is the following (and
+corresponds to the above example):
+
+       Attribute Byte
+         (Square #)
+      ----------------
+          33221100
+          ||||||+--- Upper two (2) colour bits for Square 0 (Tiles #0,1,2,3)
+          ||||+----- Upper two (2) colour bits for Square 1 (Tiles #4,5,6,7)
+          ||+------- Upper two (2) colour bits for Square 2 (Tiles #8,9,A,B)
+          +--------- Upper two (2) colour bits for Square 3 (Tiles #C,D,E,F)
+
+Writing to the name table is rather simple. Simply set register $2006 to
+point to $2000 and then write your name table using register $2007.
+However, you can't just write to it like that. You have to wait for
+the VBlank to get done before you write to the PPU or you'll have
+problems. If you're only writing a little to the PPU, like the palette,
+then you're okay. But if you're writing a lot of data, you'll have
+problems. Here's how to wait for the VBlank to get done:
+
+vwait:  
+  lda $2002    ;wait
+  bpl vwait
+
+That's it. What it does is read $2002 and see if the VBlank flag is set.
+If it is then it loops until the VBlank is done. If you have to write a
+lot of data to the VRAM then just turn the display off, write your data,
+then turn the display back on. Here's it in action(it may not even be
+needed in this instance because not much data is being written):
+
+vwait:  
+  lda $2002    ;wait
+  bpl vwait
+
+        lda #$20        ;set ppu to start of VRAM
+        sta $2006       
+        lda #$20     
+        sta $2006 
+
+  lda #$48  ;write pattern table tile numbers to the name table
+  sta $2007
+  lda #$65
+  sta $2007
+  lda #$6C
+  sta $2007
+  lda #$6C
+  sta $2007
+  lda #$6F
+  sta $2007
+
+If you'll look at the code, you'll notice that the address written to
+$2006 is $2020 and not $2000. That's because the first line(the first
+32 bytes) is not displayed due to the difference between NSTC and PAL.
+I think. I can't find the information I had on it. Now that we got a
+background, its time for some sprites to start dancing. Dance little 
+sprites! Dance!
+
+Sprites
+---------
+Sprites are well....sprites. You know what they are. The poor things
+that jump, shoot, and die all those video games. The actual pixels for
+sprites are stored in the pattern tables. Which pattern table depends
+on which flag you wrote to the PPU. To control the sprites, you have
+to write data to the SPR-RAM. This ram is 256 bytes long. Each sprite
+has 4 bytes in which to be described. This gives you a limit of 64
+sprites. Y0SHi's nestech.doc has some information:
+
+        +------+----------+--------------------------------------+
+        + Byte | Bits     | Description                          |
+        +------+----------+--------------------------------------+
+        |  0   | YYYYYYYY | Y Coordinate - 1. Consider the coor- |
+        |      |          | dinate the upper-left corner of the  |
+        |      |          | sprite itself.                       |
+        |  1   | IIIIIIII | Tile Index #                         |
+        |  2   | vhp000cc | Attributes                           |
+        |      |          |   v = Vertical Flip   (1=Flip)       |
+        |      |          |   h = Horizontal Flip (1=Flip)       |
+        |      |          |   p = Background Priority            |
+        |      |          |         0 = In front                 |
+        |      |          |         1 = Behind                   |
+        |      |          |   c = Upper two (2) bits of colour   |
+        |  3   | XXXXXXXX | X Coordinate (upper-left corner)     |
+        +------+----------+--------------------------------------+
+
+The Tile Index # is what number from the pattern table is being used
+for the sprite. To access this SPR-RAM, you have to set the register
+$2003 to the address that you want to write to and write the sprite data
+to register $2004. Check it out:
+
+  ldx #$00  ;set $2004 to the start of SPR-RAM
+  stx $2003
+  stx $2003
+
+        lda #$7F  ;y-1
+        sta $2004
+        lda #$00        ;sprite pattern number
+        sta $2004
+        lda #%00000001       ;color bit
+        sta $2004
+        lda #$08  ;x
+        sta $2004
+
+That's only one way of writing to the SPR-RAM. You can also use the
+Sprite DMA register $4014. This register writes 256 bytes of data to
+SPR-RAM. The address read from is $100*N, where N is the value written
+to the register. Okay. We got backgrounds. We got sprites. What's next?
+Input! Yes! Make them sprites move!
+
+Reading Input
+--------------
+Reading input from the joypad is sort of simple. All you have to do is
+read register $4016 for joypad 1 and $4017 for joypad 2. Before you can
+read them though, you have to reset the joypads by strobing them. You
+have to do this. Just write 1 then 0 to register $4016 then read the
+register. Here's what each read means according to Y0SHi:
+
+      1 = A          9 = Ignored   17 = +--+
+      2 = B         10 = Ignored   18 =    +-- Signature
+      3 = SELECT    11 = Ignored   19 =    |
+      4 = START     12 = Ignored   20 = +--+
+      5 = UP        13 = Ignored   21 = 0
+      6 = DOWN      14 = Ignored   22 = 0
+      7 = LEFT      15 = Ignored   23 = 0
+      8 = RIGHT     16 = Ignored   24 = 0
+
+How you handle the input from the joypad is up to you. There's a
+bunch of ways to do it. It really depends on the program. Here's an
+example that waits for the start button to be pressed:
+
+loopkey:
+  lda #$01  ;strobe the joypad before read
+  sta $4016
+  lda #$00
+  sta $4016
+
+  lda $4016
+  lda $4016
+  lda $4016
+  lda $4016 ;this read should give the status of the start button
+  cpa #$01
+  bne loopkey ;loop if no start pressed
+
+Handling the key presses can be kinda hard though. Check the examples
+included for some different ways.
+
+Sound
+------
+I'm not touching sound. I'm sorry if you were all excited to learn about
+it. The most recent of Y0SHi's nestech.doc(v2.00) doesn't have anything
+about sound in it because some of the information is wrong. However, his
+earlier doc did include it, so just look at that. There is also Brad
+Taylor's NES channel guide. Looks like pretty good stuff.
+
+The End???
+-----------
+Nope. You should now have an idea on how to make the NES do what you
+want. I hope so anyway. I'm now going to give some code snippets and
+talk about how to do some things. Save you some time trying to figure
+this shit out.
+
+Pausing Program Flow
+---------------------
+This is a nice little routine I got from a 6502 newsgroup a long time
+ago:
+
+killtime:
+
+  LDY #$10
+  LDX #$10
+.1      JSR .2
+  DEX
+  BNE .1
+  DEY
+  BNE .1
+.2  RTS
+
+What you do is simply call this routine when you want to kill some
+time. Maybe show a title screen for a couple of seconds before allowing
+input. To change the time killed just change the values that are loaded
+into Y and X.
+
+Writing To CHR-ROM
+-------------------
+Normally you can't write to the CHR-ROM. However, if you set .ineschr
+to 0 and tell the NES that you have no chr data, it will let you write
+to the CHR-RAM. Its CHR-RAM now because you can write to it. Here's a
+way to do it. Have a bank in your PRG-ROM that is really chr data:
+
+  .bank 2
+  .org $C000
+  .incbin "title.chr"   ;8192 bytes long
+
+Now, since we can't write to the PPU will VBlank is going on, we have to
+turn the display off like this:
+
+  lda #%00010110
+  sta $2001
+
+This stops the VBlank and we can write all we want without worrying about
+mucking shit up. Just write from the address where your chr data is at, in
+this case $C000, and then just turn the display back on when you're done:
+
+  lda #%00011110
+  sta $2001
+
+But since your chr data is going to be more than 256 bytes, you can't
+just use a simple loop. The 6502 has some special ways of dealing with
+this. Indirect addressing, direct addressing. It's confusing shit. Not too
+hard though. Look at the docs that I've included for the best way for you
+to do it. Try asm1step.html. This is a nice way to refresh something in the
+pattern table without switching CHR-ROM. Or modify graphics on the fly.
+
+Moving A Sprite
+-----------------
+Moving a sprite is pretty simple. Just get joypad input, decide which
+buttons were pressed. Then just set register $2003 to the X, Y bytes
+in the SPR-RAM, read from $2004 and increase or decrease that value
+depending on which button was pressed.
+
+That's It Folks
+---------------
+That's it. I hope this is a help to somebody out there. If you got
+issues or want me to add some sort of information or something just
+mail me. All this information in this document is stuff I've
+discovered just playing around with emulators. It maybe wrong or
+incorrect. But it works. Most of the time.
+
+Places To Go
+-------------
+http://nesdev.parodius.com/  <----GO HERE! So much info!
+http://www.zophar.net/index.phtml
+http://www.komkon.org/fms/EMUL8/
+http://www.sfu.ca/~ccovell/NESTechFAQ.html
+
+Thanks And Biography
+---------------------
+(No Order)
+RTK, Assembly In One Step
+Tony Young, JunkDemo
+Charles Doty, Converted JunkDemo, NESASM, other things
+Bloodlust Software, Nesticle
+Marat Fayzullin, Nintendo Entertainment System Architecture v2.1 
+David Michel, NESASM
+Y0SHi, Nintendo Entertainment System Documentation v.53, v2.00
+Chris Covell, NES Technical/Emulation/Development FAQ v1.2, props
+SnowBro, NSA, Tlayer, misc info, also props
+HeAvEn/Taquart, 6502 Opcodes
+\Firebug\, Comprehensive NES Mapper Document v0.80
+Brad Taylor, The NES sound channel guide 1.8
+Samus Aran, NTSC PPU timing
+loopy, The skinny on nes scrolling
+
+All the random people who write/wrote shit about the NES and put it
+on the web.
+
+All these people, though they don't know it, have contributed to
+this document in some way.
+
+bob
+joker21@earthlink.net
+October 16
+EOFàð
