@@ -1,29 +1,16 @@
+  JSR LoadBackground
+  JSR LoadPalettes
+  JSR LoadAttributes
+
 ; set health to 8
 
   LDA #$24
   STA health
 
-; palette
-
-LoadPalettes:
-  LDA $2002             ; read PPU status to reset the high/low latch
-  LDA #$3F
-  STA $2006             ; write the high byte of $3F00 address
-  LDA #$00
-  STA $2006             ; write the low byte of $3F00 address
-  LDX #$00              ; start out at 0
-
-LoadPalettesLoop:
-  LDA palette, x        ; load data from address (palette + the value in x)
-  STA $2007             ; write to PPU
-  INX                   ; X = X + 1
-  CPX #$20              ; Compare X to hex $10, decimal 16 - copying 16 bytes = 4 sprites
-  BNE LoadPalettesLoop  ; Branch to LoadPalettesLoop if compare was Not Equal to zero
-
 ; sprite
 
 DrawBit1:
-  LDA #$0f
+  LDA #$1d
   STA $0200        ; set tile.y pos
   LDA #$01
   STA $0201        ; set tile.id
@@ -33,7 +20,7 @@ DrawBit1:
   STA $0203        ; set tile.x pos
 
 DrawBit2:
-  LDA #$0f
+  LDA #$1d
   STA $0204        ; set tile.y pos
   LDA #$02
   STA $0205        ; set tile.id
@@ -43,7 +30,7 @@ DrawBit2:
   STA $0207        ; set tile.x pos
 
 DrawBit3:
-  LDA #$0f
+  LDA #$1d
   STA $0208        ; set tile.y pos
   LDA #$03
   STA $0209        ; set tile.id
@@ -53,7 +40,7 @@ DrawBit3:
   STA $020b        ; set tile.x pos
 
 DrawBit4:
-  LDA #$0f
+  LDA #$1d
   STA $020c        ; set tile.y pos
   LDA #$03
   STA $020d        ; set tile.id
@@ -63,7 +50,7 @@ DrawBit4:
   STA $020f        ; set tile.x pos
 
 DrawBit5:
-  LDA #$0f
+  LDA #$1d
   STA $0210        ; set tile.y pos
   LDA #$03
   STA $0211        ; set tile.id
@@ -73,7 +60,7 @@ DrawBit5:
   STA $0213        ; set tile.x pos
 
 DrawBit6:
-  LDA #$0f
+  LDA #$1d
   STA $0214        ; set tile.y pos
   LDA #$03
   STA $0215        ; set tile.id
@@ -236,4 +223,63 @@ DrawBar6:
   LDX #$03
   STX $0215
 DrawDone:
+  RTS
+
+; 
+
+LoadBackground:
+  LDA $2002
+  LDA #$20
+  STA $2006
+  LDA #$00
+  STA $2006
+
+  LDA #<background ; Loading the #LOW(var) byte in asm6
+  STA pointerBackgroundLowByte
+  LDA #>background ; Loading the #HIGH(var) byte in asm6
+  STA pointerBackgroundHighByte
+
+  LDX #$00
+  LDY #$00
+LoadBackgroundLoop:
+  LDA (pointerBackgroundLowByte), y
+  STA $2007
+  INY
+  CPY #$00
+  BNE LoadBackgroundLoop
+  INC pointerBackgroundHighByte
+  INX
+  CPX #$04
+  BNE LoadBackgroundLoop
+  RTS
+
+LoadPalettes:
+  LDA $2002
+  LDA #$3F
+  STA $2006
+  LDA #$00
+  STA $2006
+
+  LDX #$00
+LoadPalettesLoop:
+  LDA palettes, x
+  STA $2007
+  INX
+  CPX #$20
+  BNE LoadPalettesLoop
+  RTS
+
+LoadAttributes:
+  LDA $2002
+  LDA #$23
+  STA $2006
+  LDA #$C0
+  STA $2006
+  LDX #$00
+LoadAttributesLoop:
+  LDA attributes, x
+  STA $2007
+  INX
+  CPX #$40
+  BNE LoadAttributesLoop
   RTS

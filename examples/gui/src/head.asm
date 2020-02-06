@@ -14,6 +14,8 @@
 
     .enum $0000 ; Zero Page variables
 
+pointerBackgroundLowByte  .dsb 1
+pointerBackgroundHighByte .dsb 1
 health          .dsb 1
 
     .ende
