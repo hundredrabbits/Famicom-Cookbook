@@ -69,7 +69,6 @@ ReadBDone:        ; handling this button is done
   RTI        ; return from interrupt
 
 RenderStart:
-  
   LDA #%10000000   ; enable NMI, sprites from Pattern Table 0
   STA $2000
   LDA #%00010000   ; enable sprites
@@ -77,9 +76,8 @@ RenderStart:
   RTS
 
 RenderStop:
-  
-  LDA #%10000000   ; enable NMI, sprites from Pattern Table 0
+  LDA #%10000000   ; disable NMI, sprites from Pattern Table 0
   STA $2000
-  LDA #%00000000   ; enable sprites
+  LDA #%00000000   ; disable sprites
   STA $2001
   RTS

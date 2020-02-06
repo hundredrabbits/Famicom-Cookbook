@@ -18,8 +18,9 @@
 
 pointerBackgroundLowByte  .dsb 1
 pointerBackgroundHighByte .dsb 1
-stage_id .dsb 2
-stage_to .dsb 2
+stage_id .dsb 1
+stage_to .dsb 1
+is_rendering .dsb 1
 
     .ende
 
