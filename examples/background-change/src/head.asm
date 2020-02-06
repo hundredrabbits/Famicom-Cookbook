@@ -18,9 +18,12 @@
 
 pointerBackgroundLowByte  .dsb 1
 pointerBackgroundHighByte .dsb 1
-stage_id .dsb 1
+stage_at .dsb 1
 stage_to .dsb 1
 is_rendering .dsb 1
+buttons .dsb 1
+last_button .dsb 1
+need_update .dsb 1
 
     .ende
 
@@ -37,6 +40,15 @@ sleeping        .dsb 1
 PRG_COUNT       = 1       ;1 = 16KB, 2 = 32KB
 MIRRORING       = %0001
 
+BUTTON_A      = 1 << 7
+BUTTON_B      = 1 << 6
+BUTTON_SELECT = 1 << 5
+BUTTON_START  = 1 << 4
+BUTTON_UP     = 1 << 3
+BUTTON_DOWN   = 1 << 2
+BUTTON_LEFT   = 1 << 1
+BUTTON_RIGHT  = 1 << 0
+
 PPU_Control     .equ $2000
 PPU_Mask        .equ $2001
 PPU_Status      .equ $2002
@@ -48,12 +60,14 @@ spriteRAM       .equ $0200
 SPRITE_X        .equ $0203
 SPRITE_Y        .equ $0200
 SPRITE_ID       .equ $0201
+JOYPAD1 = $4016
 
 POS_X .equ $08
 POS_Y .equ $09
 
 POS_AT .equ $0a
 POS_TO .equ $0b
+
 
     .org $C000
     

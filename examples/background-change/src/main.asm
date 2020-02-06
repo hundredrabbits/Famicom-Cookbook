@@ -1,4 +1,4 @@
-  JSR LoadBackground1
+  JSR LoadSlide1
   JSR LoadPalettes
   JSR LoadAttributes
 
@@ -7,44 +7,6 @@ EnableSprites:
 
 Forever:
   JMP Forever     ;jump back to Forever, infinite loop
-
-CheckBackground:
-  LDA is_rendering
-  CMP #$01
-  BEQ CheckBackgroundDone
-  INC $10
-CheckBackgroundDone:
-  RTS
-
-LoadBackground1:
-  LDA $2002
-  LDA #$20
-  STA $2006
-  LDA #$00
-  STA $2006
-
-  LDA #<backgroundTown ; Loading the #LOW(var) byte in asm6
-  STA pointerBackgroundLowByte
-  LDA #>backgroundTown ; Loading the #HIGH(var) byte in asm6
-  STA pointerBackgroundHighByte
-
-  JSR UpdateBackground
-  RTS
-
-LoadBackground2:
-  LDA $2002
-  LDA #$20
-  STA $2006
-  LDA #$00
-  STA $2006
-
-  LDA #<backgroundCave ; Loading the #LOW(var) byte in asm6
-  STA pointerBackgroundLowByte
-  LDA #>backgroundCave ; Loading the #HIGH(var) byte in asm6
-  STA pointerBackgroundHighByte
-
-  JSR UpdateBackground
-  RTS
 
 LoadPalettes:
   LDA $2002
@@ -82,48 +44,189 @@ NMI:
   STA $2003  ; set the low byte (00) of the RAM address
   LDA #$02
   STA $4014  ; set the high byte (02) of the RAM address, start the transfer
-
-LatchController:
-  LDA #$01
-  STA $4016
-  LDA #$00
-  STA $4016       ; tell both the controllers to latch buttons
-
-ReadA: 
-  LDA $4016
-  AND #%00000001  ; only look at bit 0
-  BEQ ReadADone
-  JSR RenderStart
-ReadADone:        ; handling this button is done
-
-ReadB: 
-  LDA $4016
-  AND #%00000001  ; only look at bit 0
-  BEQ ReadBDone
-  JSR RenderStop
-ReadBDone:        ; handling this button is done
-
-ReadSel: 
-  LDA $4016
-  AND #%00000001  ; only look at bit 0
-  BEQ ReadSelDone
-  INC $11
-  JSR RenderStop
-  JSR LoadBackground2
-  JSR RenderStart
-ReadSelDone:        ; handling this button is done
-
-ReadStart: 
-  LDA $4016
-  AND #%00000001  ; only look at bit 0
-  BEQ ReadStartDone 
-  INC $12
-  JSR RenderStop
-  JSR LoadBackground1
-  JSR RenderStart
-ReadStartDone:        ; handling this button is done
+  JSR Readjoy
+  JSR Handlejoy
+  JSR CheckBackground
+  ; store last key
+  LDA buttons 
+  STA last_button
 
   RTI        ; return from interrupt
+
+; Background ops
+
+CheckBackground:
+  LDA stage_to
+  CMP stage_at
+  BEQ CheckBackgroundDone
+  STA stage_at
+  JSR RenderStop
+  JSR ChangeBackground
+  JSR LoadPalettes
+  JSR LoadAttributes
+  JSR RenderStart
+  
+CheckBackgroundDone:
+  RTS
+
+ChangeBackground:
+  LDA stage_at
+  CMP #$00
+  BEQ ChangeTo1
+  CMP #$01
+  BEQ ChangeTo2
+  CMP #$02
+  BEQ ChangeTo3
+  CMP #$03
+  BEQ ChangeTo4
+  CMP #$04
+  BEQ ChangeTo5
+ChangeTo1:
+  JSR LoadSlide1
+  JSR LoadPalettes
+  RTS
+ChangeTo2:
+  JSR LoadSlide2
+  JSR LoadPalettes
+  RTS
+ChangeTo3:
+  JSR LoadSlide3
+  JSR LoadPalettes
+  RTS
+ChangeTo4:
+  JSR LoadSlide4
+  JSR LoadPalettes
+  RTS
+ChangeTo5:
+  JSR LoadSlide5
+  JSR LoadPalettes
+  RTS
+ChangeBackgroundDone:
+  RTS
+
+UpdateBackground:
+  LDX #$00
+  LDY #$00
+LoadBackgroundLoop:
+  LDA (pointerBackgroundLowByte), y
+  STA $2007
+  INY
+  CPY #$00
+  BNE LoadBackgroundLoop
+  INC pointerBackgroundHighByte
+  INX
+  CPX #$04
+  BNE LoadBackgroundLoop
+  RTS
+
+LoadSlide1:
+  LDA $2002
+  LDA #$20
+  STA $2006
+  LDA #$00
+  STA $2006
+
+  LDA #<slide1
+  STA pointerBackgroundLowByte
+  LDA #>slide1
+  STA pointerBackgroundHighByte
+
+  JSR UpdateBackground
+  RTS
+
+LoadSlide2:
+  LDA $2002
+  LDA #$20
+  STA $2006
+  LDA #$00
+  STA $2006
+
+  LDA #<slide2
+  STA pointerBackgroundLowByte
+  LDA #>slide2
+  STA pointerBackgroundHighByte
+
+  JSR UpdateBackground
+  RTS
+
+LoadSlide3:
+  LDA $2002
+  LDA #$20
+  STA $2006
+  LDA #$00
+  STA $2006
+
+  LDA #<slide3
+  STA pointerBackgroundLowByte
+  LDA #>slide3
+  STA pointerBackgroundHighByte
+
+  JSR UpdateBackground
+  RTS
+
+LoadSlide4:
+  LDA $2002
+  LDA #$20
+  STA $2006
+  LDA #$00
+  STA $2006
+
+  LDA #<slide4
+  STA pointerBackgroundLowByte
+  LDA #>slide4
+  STA pointerBackgroundHighByte
+
+  JSR UpdateBackground
+  RTS
+
+LoadSlide5:
+  LDA $2002
+  LDA #$20
+  STA $2006
+  LDA #$00
+  STA $2006
+
+  LDA #<slide5
+  STA pointerBackgroundLowByte
+  LDA #>slide5
+  STA pointerBackgroundHighByte
+
+  JSR UpdateBackground
+  RTS
+
+; Joypad
+
+Readjoy:
+    LDA #$01
+    STA JOYPAD1
+    STA buttons
+    LSR a
+    STA JOYPAD1
+ReadjoyLoop:
+    LDA JOYPAD1
+    LSR a
+    ROL buttons
+    BCC ReadjoyLoop
+    RTS
+
+Handlejoy:
+  LDA buttons
+CheckButtonRepeat: ; don't fire multiple times
+  CMP last_button
+  BNE OnButton
+  RTS
+OnButton:
+  CMP #$08
+  BNE OnButtonUpDone
+  INC stage_to
+OnButtonUpDone:
+  CMP #$04
+  BNE OnButtonDownDone
+  DEC stage_to
+OnButtonDownDone:
+  RTS
+
+; Renderer
 
 RenderStart:
   LDA #$01
@@ -147,19 +250,4 @@ RenderStop:
   STA $2000
   LDA #%00000000   ; disable sprites
   STA $2001
-  RTS
-
-UpdateBackground:
-  LDX #$00
-  LDY #$00
-LoadBackgroundLoop:
-  LDA (pointerBackgroundLowByte), y
-  STA $2007
-  INY
-  CPY #$00
-  BNE LoadBackgroundLoop
-  INC pointerBackgroundHighByte
-  INX
-  CPX #$04
-  BNE LoadBackgroundLoop
   RTS
