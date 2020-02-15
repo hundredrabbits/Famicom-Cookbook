@@ -18,21 +18,44 @@ Forever:
   JMP Forever     ;jump back to Forever, infinite loop
 
 LoadBackground:
-  
   LDA $2000 ; read PPU status to reset the high/low latch
   LDA #$21
   STA $2006 ; write the high byte of $2000 address
   LDA #$04
   STA $2006 ; write the low byte of $2000 address
 
-  STX #$00
+  LDX #$00
+  LDY #$00
+  JSR LoadCardRow
 
-LoadCardLoop:
+  RTS
+
+LoadCardRow:
   LDA card, x        ; load data from address (sprites +  x)
   STA $2007                ; X = X + 1
   INX
-  CPX #$08              ; Compare X to hex $20, decimal 32
-  BNE LoadCardLoop
+  ; 
+  INC pos_x
+  LDA pos_x
+  CMP #$06
+  BNE LoadCardRowContinue
+  JSR row_end
+LoadCardRowContinue:
+  ;
+  CPX #$3f              ; Compare X to hex $20, decimal 32
+  BNE LoadCardRow
+  RTS
+
+row_end:
+  LDA #$00
+  STA pos_x
+  INC pos_y
+
+  ; LDA $2000 ; read PPU status to reset the high/low latch
+  ; LDA #$21
+  ; STA $2006 ; write the high byte of $2000 address
+  ; LDA #$24
+  ; STA $2006 ; write the low byte of $2000 address
 
   RTS
 

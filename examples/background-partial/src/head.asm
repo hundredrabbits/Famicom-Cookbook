@@ -18,6 +18,8 @@
 
 pointerBackgroundLowByte  .dsb 1
 pointerBackgroundHighByte .dsb 1
+pos_x .dsb 1
+pos_y .dsb 1
 
     .ende
 
