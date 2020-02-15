@@ -30,8 +30,8 @@ LoadBackground:
 LoadCardLoop:
   LDA card, x        ; load data from address (sprites +  x)
   STA $2007                ; X = X + 1
-  INX   
-  CPX #$3f              ; Compare X to hex $20, decimal 32
+  INX
+  CPX #$08              ; Compare X to hex $20, decimal 32
   BNE LoadCardLoop
 
   RTS
