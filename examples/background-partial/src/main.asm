@@ -19,29 +19,25 @@ Forever:
 
 LoadBackground:
   LDA $2000 ; read PPU status to reset the high/low latch
-  LDA #$21
+  LDA #$20
   STA $2006 ; write the high byte of $2000 address
-  LDA #$04
+  LDA #$e4
   STA $2006 ; write the low byte of $2000 address
-
   LDX #$00
   LDY #$00
   JSR LoadCardRow
-
   RTS
 
 LoadCardRow:
   LDA card, x        ; load data from address (sprites +  x)
   STA $2007                ; X = X + 1
   INX
-  ; 
-  INC pos_x
-  LDA pos_x
+  INC tile_index
+  LDA tile_index
   CMP #$06
   BNE LoadCardRowContinue
   JSR row_end
 LoadCardRowContinue:
-  ;
   CPX #$3f              ; Compare X to hex $20, decimal 32
   BNE LoadCardRow
   RTS
@@ -49,14 +45,12 @@ LoadCardRowContinue:
 row_end:
   LDA #$00
   STA pos_x
-  INC pos_y
-
-  ; LDA $2000 ; read PPU status to reset the high/low latch
-  ; LDA #$21
-  ; STA $2006 ; write the high byte of $2000 address
-  ; LDA #$24
-  ; STA $2006 ; write the low byte of $2000 address
-
+  LDA $2000 ; read PPU status to reset the high/low latch
+  LDA cardpos_lb, y
+  STA $2006 ; write the high byte of $2000 address
+  LDA cardpos_hb, y
+  STA $2006 ; write the low byte of $2000 address
+  INY
   RTS
 
 LoadPalettes:

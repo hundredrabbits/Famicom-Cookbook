@@ -2,32 +2,23 @@
 ;;;   iNES HEADER   ;;;
 ;;;;;;;;;;;;;;;;;;;;;;;
 
-    .db  "NES", $1a     ;identification of the iNES header
-    .db  PRG_COUNT      ;number of 16KB PRG-ROM pages
-    .db  $01            ;number of 8KB CHR-ROM pages
-    .db  $70|MIRRORING  ;mapper 7
-    .dsb $09, $00       ;clear the remaining bytes
+  .db  "NES", $1a     ;identification of the iNES header
+  .db  PRG_COUNT      ;number of 16KB PRG-ROM pages
+  .db  $01            ;number of 8KB CHR-ROM pages
+  .db  $70|MIRRORING  ;mapper 7
+  .dsb $09, $00       ;clear the remaining bytes
 
-    .fillvalue $FF      ; Sets all unused space in rom to value $FF
+  .fillvalue $FF      ; Sets all unused space in rom to value $FF
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;;   VARIABLES   ;;;
 ;;;;;;;;;;;;;;;;;;;;;
 
-    .enum $0000 ; Zero Page variables
+  .enum $0000 ; Zero Page variables
 
-pointerBackgroundLowByte  .dsb 1
-pointerBackgroundHighByte .dsb 1
-pos_x .dsb 1
-pos_y .dsb 1
+tile_index .dsb 1
 
-    .ende
-
-    .enum $0400 ; Variables at $0400. Can start on any RAM page
-
-sleeping        .dsb 1
-
-    .ende
+  .ende
 
 ;;;;;;;;;;;;;;;;;;;;;
 ;;;   CONSTANTS   ;;;
@@ -44,7 +35,8 @@ PPU_Address     .equ $2006
 PPU_Data        .equ $2007
 
 spriteRAM       .equ $0200
-    .org $C000
+
+  .org $C000
     
 ;;;;;;;;;;;;;;;;;
 ;;;   RESET   ;;;

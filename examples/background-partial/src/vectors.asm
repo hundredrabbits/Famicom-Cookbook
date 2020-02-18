@@ -2,8 +2,8 @@
 ;;;   VECTORS   ;;;
 ;;;;;;;;;;;;;;;;;;;
 
-    .pad $FFFA
+  .pad $FFFA
 
-    .dw NMI
-    .dw RESET
-    .dw 0
+  .dw NMI
+  .dw RESET
+  .dw 0
