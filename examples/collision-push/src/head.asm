@@ -16,6 +16,13 @@
 
     .enum $0000 ; Zero Page variables
 
+pos_x    .dsb 1
+pos_y    .dsb 1
+pos_ori  .dsb 1
+box_pos_x    .dsb 1
+box_pos_y    .dsb 1
+is_colliding .dsb 1
+
 screenPtr       .dsb 2
 metaTile        .dsb 1
 counter         .dsb 1
