@@ -17,7 +17,14 @@ LoadPalettesLoop:
   LDA #%00010000   ; enable sprites
   STA $2001
 
-  JSR InitDeck
+  ; load some data up
+
+  LDA #$09
+  STA $00    ; memory addr A
+  LDA #$05
+  STA $01    ; memory addr B
+
+  JSR Update
 
 Forever:
   JMP Forever     ;jump back to Forever, infinite loop
@@ -38,53 +45,48 @@ ReadA:
   LDA $4016
   AND #%00000001  ; only look at bit 0
   BEQ ReadADone
-  JSR ShuffleDeck
+  ; INC value
+  JSR Update
 ReadADone:        ; handling this button is done
   
 ReadB: 
   LDA $4016
   AND #%00000001  ; only look at bit 0
   BEQ ReadBDone
-  JSR ShuffleDeck
+  ; DEC value
+  JSR Update
 ReadBDone:        ; handling this button is done
 
   RTI        ; return from interrupt
 
-; Deck
-; Create a deck of 54($36) cards, from zeropage $40
+Update:
+  JSR Mod
+  STA $10
 
-InitDeck:
-  LDX #$00
-InitDeckLoop:
-  TXA
-  STA $40, x
-  INX
-  CPX #$36
-  BNE InitDeckLoop
+  JSR Division
+  STA $11
   RTS
-  
-ShuffleDeck:
-  INC count
-  LDX #$00 ; x = where I write
-  LDY #$00 ; y = what I write
-ShuffleDeckLoop:
 
-  LDY count
+  ; modulus, returns in register A
 
-  ; add count + x
-  STX offset
-  LDA count
-  CLC
-  ADC offset
-  TAY
+Mod:
+  LDA $00  ; memory addr A
+  SEC
+Modulus:  
+  SBC $01  ; memory addr B
+  BCS Modulus
+  ADC $01
+  RTS
 
+  ; division, rounds up, returns in register A
 
-  LDA shuffleA, y
-
-
-  STA $40, x
-
+Division:
+  LDA $00 ; memory addr A
+  LDX #0
+  SEC
+Divide:   
   INX
-  CPX #$36
-  BNE ShuffleDeckLoop
+  SBC $01 ; memory addr B
+  BCS Divide
+  TXA      ;get result into accumulator
   RTS

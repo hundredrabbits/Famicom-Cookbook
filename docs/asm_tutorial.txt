@@ -69,9 +69,7 @@ Note that these are, in fact, 8bit registers. You may be wondering what the #$ m
 Examples:
 
   lda #%00100011  ; loads A with a binary number.
-  
   ldx #50         ; loads X with 50 in decimal.
-
   ldy #$50        ; loads Y with 50 in hex.   
 
 I hope this is clear, if not, email me.
@@ -81,35 +79,25 @@ Memory Address Addressing
   For a number to be interpreted as a memory address by the assembler, all that needs to be done is to leave off the '#'. Now also keep in mind that addresses are usually represented as 16bit hex numbers, so to load a register with a value from memory, we would do this:
 
   lda $2002   ; load A with the value at memory location 2002 hex.
-
   ldx 2002    ; load X with the value at memory location 2002 decimal.
-
   ldy 2002    ; load Y with value at location 2002 decimal.
 
 Not too difficult, eh?
 Now for the next instruction you need to know.
-
-
-
 
 Storing Values In Memory
 
   The next instruction we will learn is STk where k is one of the 3 registers. The store instruction cannot to my knowledge take a immediate value as a parameter/operand. I'll let some code examples explain:
 
   sta $2004  ; stores A in memory location 2004 hex.
-
   sty $2002 ; stores Y in memory location 2002 hex.
-
   stx $FF   ; stores X in memory location 00FF hex.
 
 Note that addresses are usually represented as hex numbers. If you use a 2 digit number in a store instruction, it is interpreted as 00xx where xx is the 2 digit number you used.
 
 Also note that what we've done so far is called Direct Addressing, were we just give the actual address we want to put something into.
 
-
 Day 2 - A Source Code File's Structure
-
-
 
 What's Happening? 
 
@@ -120,9 +108,7 @@ About Banks
   No, banks don't hold your money for you. They hold your program and all it's data. There are 3 banks that we will typically use, they are:
 
   Bank 0 - We're our code goes starting at $8000.
-
   Bank 1 - An Interrupt Table. Important. Starts at $FFFA for us.
-
   Bank 2 - Where we will be putting our sprite and background data.
      Starting at $0000.
 
@@ -194,11 +180,9 @@ The PPU
 Binary Notation
 
   Just to be absolutely clear, we will give the bits of a memory register in the following order:
-
   Here's a random binary number (1 byte), and how we number it's bits:
 
   0 1 1 0 0 0 1 1
-  
   7 6 5 4 3 2 1 0
 
 So the 7th bit is on the left and 0 bit on the right.
@@ -322,7 +306,7 @@ explain it? :
   bne loadpal  ; bne stands for Branch on Not Equal, so this 
   ; will branch to loadpal if X wasn't equal to 
   ; 32. If X is 32, then the loop will stop and 
-  ; we�re done loading the pallete.
+  ; we're done loading the pallete.
 
 Assume ourpal is a label that is defined later in the source file that looks something like this:
 
@@ -352,24 +336,19 @@ The New Instructions
         They are:
 
   INX - Adds 1 to X. There is also INY which adds 1 to Y. There is 
-NO INA I heard that the designers of the 6502 just forgot it. There                  is a INA on the next version of the 6502 (the 65c02) that is used 
+NO INA I heard that the designers of the 6502 just forgot it. There is a INA on the next version of the 6502 (the 65c02) that is used 
 on the SNES.
 
-CPX - Compares a value with X. There is also CPY and CPA which        compare things with Y and A respectively. You can only use 
-  immediate values here. NO MEMORY ADDRESSES ALLOWED.
+  CPX - Compares a value with X. There is also CPY and CPA which compare things with Y and A respectively. 
+  You can only use immediate values here. NO MEMORY ADDRESSES ALLOWED.
 
   BNE - Jumps to a label if the result of the last CPk (k is A or
   X or Y) instruction was Not Equal. There is also BEQ which jumps
         if  the result was EQual. There are a few more that I'll explain 
         when they come up.
 
-
-
   Loading the pallete is EXTREMELY important as a background or a sprite is NOTHING without it's pallete. Loading a pallete is basically all you need to do to it as once it's there, it does it's job without any help from you. Tomorrow a sprite.
   
-  
-
-
 Day 5 - Displaying A Sprite
 
 

@@ -15,17 +15,6 @@
 ;;;;;;;;;;;;;;;;;;;;;
 
     .enum $0000 ; Zero Page variables
-    
-seed1 .dsb 1
-seed2 .dsb 1
-count .dsb 1
-offset .dsb 1
-
-    .ende
-
-    .enum $0400 ; Variables at $0400. Can start on any RAM page
-
-sleeping        .dsb 1
 
     .ende
 
