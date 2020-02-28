@@ -68,6 +68,7 @@ ShuffleDeck:
   LDX #$00
 ShuffleDeckLoop:
   LDA shuffleA, x
+  STA $40, x
   INX
   CPX #$36
   BNE ShuffleDeckLoop
