@@ -15,11 +15,10 @@
 ;;;;;;;;;;;;;;;;;;;;;
 
     .enum $0000 ; Zero Page variables
-    
+
+seed  .dsb 1
 seed1 .dsb 1
 seed2 .dsb 1
-count .dsb 1
-offset .dsb 1
 
     .ende
 

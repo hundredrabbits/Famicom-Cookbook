@@ -28,6 +28,8 @@ NMI:
   LDA #$02
   STA $4014       ; set the high byte (02) of the RAM address, start the transfer
 
+  JSR RunTimer
+
 LatchController:
   LDA #$01
   STA $4016
@@ -38,14 +40,25 @@ ReadA:
   LDA $4016
   AND #%00000001  ; only look at bit 0
   BEQ ReadADone
-  JSR ShuffleDeck
+  JSR CollapseDeck
 ReadADone:        ; handling this button is done
   
 ReadB: 
   LDA $4016
   AND #%00000001  ; only look at bit 0
   BEQ ReadBDone
-  JSR ShuffleDeck
+  ; shuffle
+  JSR ShuffleDeckA
+  LDA seed
+  CMP #$00
+  BEQ ReadBDone
+  JSR ShuffleDeckB
+  CMP #$01
+  BEQ ReadBDone
+  JSR ShuffleDeckC
+  ; CMP #$02
+  ; BEQ ReadBDone
+  ; BNE ShuffleDeckD
 ReadBDone:        ; handling this button is done
 
   RTI        ; return from interrupt
@@ -56,35 +69,75 @@ ReadBDone:        ; handling this button is done
 InitDeck:
   LDX #$00
 InitDeckLoop:
-  TXA
+  LDA shuffleA, x
   STA $40, x
   INX
   CPX #$36
   BNE InitDeckLoop
   RTS
   
-ShuffleDeck:
-  INC count
-  LDX #$00 ; x = where I write
-  LDY #$00 ; y = what I write
-ShuffleDeckLoop:
-
-  LDY count
-
-  ; add count + x
-  STX offset
-  LDA count
-  CLC
-  ADC offset
-  TAY
-
-
-  LDA shuffleA, y
-
-
-  STA $40, x
-
+ShuffleDeckA:
+  LDX #$00
+ShuffleDeckALoop:
+  LDY shuffleA, x ; store the value
+  LDA $40, y
+  STA $90, x
   INX
   CPX #$36
-  BNE ShuffleDeckLoop
+  BNE ShuffleDeckALoop
+  RTS
+
+ShuffleDeckB:
+  LDX #$00
+ShuffleDeckBLoop:
+  LDY shuffleB, x ; store the value
+  LDA $40, y
+  STA $90, x
+  INX
+  CPX #$36
+  BNE ShuffleDeckBLoop
+  RTS
+
+ShuffleDeckC:
+  LDX #$00
+ShuffleDeckCLoop:
+  LDY shuffleC, x ; store the value
+  LDA $40, y
+  STA $90, x
+  INX
+  CPX #$36
+  BNE ShuffleDeckCLoop
+  RTS
+
+ShuffleDeckD:
+  LDX #$00
+ShuffleDeckDLoop:
+  LDY shuffleD, x ; store the value
+  LDA $40, y
+  STA $90, x
+  INX
+  CPX #$36
+  BNE ShuffleDeckDLoop
+  RTS
+
+CollapseDeck:
+  LDX #$00 ; x = where I write
+CollapseDeckLoop:
+  LDA $90, x
+  STA $40, x
+  INX
+  CPX #$36
+  BNE CollapseDeckLoop
+  RTS
+
+RunTimer:
+  INC seed
+  LDA seed
+  CMP #$04
+  BEQ ResetTimer
+  RTS
+
+ResetTimer:
+  LDA #$00
+  STA seed
   RTS

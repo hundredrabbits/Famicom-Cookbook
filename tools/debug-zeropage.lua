@@ -10,9 +10,9 @@ end
 
 while true do
   for x=0,15 do 
-    for y=0,7 do 
+    for y=0,15 do 
       id = x + (y * 16)
-      gui.text((x * 15) + 10, (y * 15) + 10, printaddr(id))
+      gui.text((x * 15) + 10, (y * 10) + 15, printaddr(id))
     end
   end
   emu.frameadvance() 

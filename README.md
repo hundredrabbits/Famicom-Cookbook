@@ -1,6 +1,8 @@
-# Famicom Cookbook
+# The Famicom Cookbook
 
-We had a hard time finding examples for the asm6 compiler, most examples out there we could find made use of compilers and toolchains which were exclusively available on Windows, so we put this together from bits and pieces of example projects we migrated from nesasm3 to the asm6 compiler.
+This is a collection of tools and [6502 assembly](https://100r.co/site/6502_assembly.html) example files to make Famicom games.
+
+We had a hard time finding examples for the asm6 compiler, most examples out there we could find made use of compilers and toolchains which were exclusively available on Windows, so we've put this together from bits and pieces of example projects we migrated from either nesasm3 or cc65, to the simpler asm6 compiler.
 
 ## Fceux Emulator
 
@@ -10,6 +12,8 @@ These project files will be using the Fceux emulator, to install:
 sudo apt-get update -y
 sudo apt-get install -y fceux
 ```
+
+To inspect the zeropage values, we've created [debug-zeropage.lua](https://github.com/hundredrabbits/Famicom-Cookbook/blob/master/tools/debug-zeropage.lua).
 
 ## Links
 
