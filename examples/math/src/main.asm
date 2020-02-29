@@ -1,3 +1,6 @@
+; No visuals for this one, use the tools/debug-zeropage.lua script
+; Press A/B buttons to change the values in memory
+
 LoadPalettes:
   LDA $2002    ; read PPU status to reset the high/low latch
   LDA #$3F
@@ -45,7 +48,7 @@ ReadA:
   LDA $4016
   AND #%00000001  ; only look at bit 0
   BEQ ReadADone
-  ; INC value
+  INC $00 ; memory addr A
   JSR Update
 ReadADone:        ; handling this button is done
   
@@ -53,7 +56,7 @@ ReadB:
   LDA $4016
   AND #%00000001  ; only look at bit 0
   BEQ ReadBDone
-  ; DEC value
+  INC $01 ; memory addr B
   JSR Update
 ReadBDone:        ; handling this button is done
 
@@ -63,11 +66,11 @@ Update:
   JSR Mod
   STA $10
 
-  JSR Division
+  JSR Div
   STA $11
   RTS
 
-  ; modulus, returns in register A
+; modulus, returns in register A
 
 Mod:
   LDA $00  ; memory addr A
@@ -78,9 +81,9 @@ Modulus:
   ADC $01
   RTS
 
-  ; division, rounds up, returns in register A
+; division, rounds up, returns in register A
 
-Division:
+Div:
   LDA $00 ; memory addr A
   LDX #0
   SEC
@@ -88,5 +91,5 @@ Divide:
   INX
   SBC $01 ; memory addr B
   BCS Divide
-  TXA      ;get result into accumulator
+  TXA
   RTS
