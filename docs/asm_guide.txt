@@ -359,6 +359,9 @@ thereby making multibyte arithmetic simple.  Note that in the case of
 subtraction it is necessary to SET the carry flag as it is the opposite 
 of the carry that is subtracted.
 
+SBC is subtract with carry. If C is 0 prior to the SBC instruction, 
+it subtracts one more than you expect. Put SEC before the SBC.
+
 Addition should follow this form:
 
 CLC

@@ -1,8 +1,10 @@
 # The Famicom Cookbook
 
-This is a collection of tools and [6502 assembly](https://100r.co/site/6502_assembly.html) example files to make Famicom games.
+This is a collection of tools and [example files](https://github.com/hundredrabbits/Famicom-Cookbook/tree/master/examples) to make [Famicom games](https://100r.co/site/6502_assembly.html).
 
-We had a hard time finding examples for the asm6 compiler, most examples out there we could find made use of compilers and toolchains which were exclusively available on Windows, so we've put this together from bits and pieces of example projects we migrated from either nesasm3 or cc65, to the simpler asm6 compiler.
+We had a hard time finding examples for the [asm6 assembler](https://github.com/hundredrabbits/Famicom-Cookbook/tree/master/assembler), most examples out there we could find made use of compilers and toolchains which were exclusively available on Windows, so we've put this together from bits and pieces of example projects we migrated from either nesasm3 or cc65, to the simpler asm6 compiler. We use the [Nasu Editor](https://github.com/hundredrabbits/nasu) to create spritesheets and nametables.
+
+If you have never used assembly before, we recommend that you first begin with [Easy6502](http://skilldrick.github.io/easy6502/).
 
 ## Fceux Emulator
 
