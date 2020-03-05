@@ -2,7 +2,7 @@ include "src/head.asm"
 include "src/main.asm"
 include "src/tables.asm"
 
-;; vectors
+;; Vectors
 
   .pad $FFFA
   .dw NMI
@@ -11,4 +11,4 @@ include "src/tables.asm"
 
 ;; sprite
 
-    .incbin "src/sprite.chr"
+  .incbin "src/sprite.chr"
