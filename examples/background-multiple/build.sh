@@ -5,7 +5,7 @@ rm cart.nes
 
 # Build
 
-../../compiler/asm6 src/cart.asm cart.nes
+../../assembler/asm6 src/cart.asm cart.nes
 
 # Run
 
