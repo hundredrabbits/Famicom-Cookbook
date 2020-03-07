@@ -75,7 +75,7 @@ LoadPalettesLoop:              ;
   STA $2007                    ; write to PPU
   INX                          ; X = X + 1
   CPX #$20                     ; Compare X to hex $10, decimal 16 - copying 16 bytes = 4 sprites
-  BNE LoadPalettesLoop  
+  BNE LoadPalettesLoop
 
 ;; sprite
 
@@ -108,7 +108,7 @@ CreateFollower:                ;
 ;; jump back to Forever, infinite loop
 
 Forever:                       ; 
-  JMP Forever                  
+  JMP Forever
 
 ;; nmi
 
@@ -146,21 +146,21 @@ ReadBDone:                     ; handling this button is done
 ReadSel:                       ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
-  BEQ ReadSelDone 
+  BEQ ReadSelDone
   LDA #$06                     ; sprite tile
   STA $0201
 ReadSelDone:                   ; handling this button is done
 ReadStart:                     ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
-  BEQ ReadStartDone 
+  BEQ ReadStartDone
   LDA #$06                     ; sprite tile
   STA $0201
 ReadStartDone:                 ; handling this button is done
 ReadUp:                        ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
-  BEQ ReadUpDone 
+  BEQ ReadUpDone
   DEC $0200
   DEC $0200
   LDA #$01                     ; sprite tile
@@ -169,7 +169,7 @@ ReadUpDone:                    ; handling this button is done
 ReadDown:                      ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
-  BEQ ReadDownDone 
+  BEQ ReadDownDone
   INC $0200
   INC $0200
   LDA #$02                     ; sprite tile
@@ -178,7 +178,7 @@ ReadDownDone:                  ; handling this button is done
 ReadLeft:                      ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
-  BEQ ReadLeftDone 
+  BEQ ReadLeftDone
   DEC $0203
   DEC $0203
   LDA #$03                     ; sprite tile
@@ -187,7 +187,7 @@ ReadLeftDone:                  ; handling this button is done
 ReadRight:                     ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
-  BEQ ReadRightDone 
+  BEQ ReadRightDone
   INC $0203
   INC $0203
   LDA #$04                     ; sprite tile

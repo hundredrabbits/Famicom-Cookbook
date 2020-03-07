@@ -12,7 +12,7 @@ LoadPalettesLoop:              ;
   LDA palette, x               ; load palette byte
   STA $2007                    ; write to PPU
   INX                          ; set index to next byte
-  CPX #$20            
+  CPX #$20
   BNE LoadPalettesLoop         ; if x = $20, 32 bytes copied, all done
 
 ;;
@@ -43,7 +43,7 @@ DrawSprite2:                   ;
 ;; jump back to Forever, infinite loop
 
 Forever:                       ; 
-  JMP Forever                  
+  JMP Forever
 
 ;;
 

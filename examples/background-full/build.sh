@@ -1,7 +1,12 @@
 #!/bin/bash
 
 # Remove old
+
 rm cart.nes
+
+# Lint source
+
+node ../../tools/lint6502.js
 
 # Build
 
