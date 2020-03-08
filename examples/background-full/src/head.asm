@@ -2,24 +2,21 @@
 ;; VARIABLES
 
     .enum $0000                ; Zero Page variables
-pointerBackgroundLowByte  .dsb 1
-pointerBackgroundHighByte .dsb 1
-    .ende
-    .enum $0400                ; Variables at $0400. Can start on any RAM page
-sleeping        .dsb 1
+bg_lb                   .dsb 1
+bg_hb                   .dsb 1
     .ende
 
 ;; CONSTANTS
 
 PRG_COUNT       = 1            ; 1 = 16KB, 2 = 32KB
 MIRRORING       = %0001
-PPU_Control     .equ $2000
-PPU_Mask        .equ $2001
-PPU_Status      .equ $2002
-PPU_Scroll      .equ $2005
-PPU_Address     .equ $2006
-PPU_Data        .equ $2007
-spriteRAM       .equ $0200
+PPU_Control         .equ $2000
+PPU_Mask            .equ $2001
+PPU_Status          .equ $2002
+PPU_Scroll          .equ $2005
+PPU_Address         .equ $2006
+PPU_Data            .equ $2007
+spriteRAM           .equ $0200
     .org $C000
 
 ;; RESET

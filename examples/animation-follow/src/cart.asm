@@ -11,21 +11,21 @@
 ;; VARIABLES
 
   .enum $0000                  ; Zero Page variables
-pos_x .dsb 1
-pos_y .dsb 1
+pos_x                   .dsb 1
+pos_y                   .dsb 1
   .ende
 
 ;; CONSTANTS
 
 PRG_COUNT       = 1            ; 1 = 16KB, 2 = 32KB
 MIRRORING       = %0001
-PPU_Control     .equ $2000
-PPU_Mask        .equ $2001
-PPU_Status      .equ $2002
-PPU_Scroll      .equ $2005
-PPU_Address     .equ $2006
-PPU_Data        .equ $2007
-spriteRAM       .equ $0200
+PPU_Control         .equ $2000
+PPU_Mask            .equ $2001
+PPU_Status          .equ $2002
+PPU_Scroll          .equ $2005
+PPU_Address         .equ $2006
+PPU_Data            .equ $2007
+spriteRAM           .equ $0200
 
 ;;
 
@@ -236,7 +236,7 @@ updateFollowerY:               ;
 ;;
 
   .org $E000
-  
+
 ;; tables
 
 palette:                       ; 

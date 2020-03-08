@@ -29,21 +29,21 @@ LoadBackground:                ;
   LDA #$00
   STA $2006
   LDA #<background             ; Loading the #LOW(var) byte in asm6
-  STA pointerBackgroundLowByte
+  STA bg_lb
   LDA #>background             ; Loading the #HIGH(var) byte in asm6
-  STA pointerBackgroundHighByte
+  STA bg_hb
   LDX #$00
   LDY #$00
-LoadBackgroundLoop:            ; 
-  LDA (pointerBackgroundLowByte), y
+@loop:                         ; 
+  LDA (bg_lb), y
   STA $2007
   INY
   CPY #$00
-  BNE LoadBackgroundLoop
-  INC pointerBackgroundHighByte
+  BNE @loop
+  INC bg_hb
   INX
   CPX #$04
-  BNE LoadBackgroundLoop
+  BNE @loop
   RTS
 
 ;;
@@ -55,12 +55,12 @@ LoadPalettes:                  ;
   LDA #$00
   STA $2006
   LDX #$00
-LoadPalettesLoop:              ; 
+@loop:                         ; 
   LDA palettes, x
   STA $2007
   INX
   CPX #$20
-  BNE LoadPalettesLoop
+  BNE @loop
   RTS
 
 ;;
@@ -72,12 +72,12 @@ LoadAttributes:                ;
   LDA #$C0
   STA $2006
   LDX #$00
-LoadAttributesLoop:            ; 
+@loop:                         ; 
   LDA attributes, x
   STA $2007
   INX
   CPX #$40
-  BNE LoadAttributesLoop
+  BNE @loop
   RTS
 
 ;;
