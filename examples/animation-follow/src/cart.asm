@@ -70,12 +70,12 @@ LoadPalettes:                  ;
   LDA #$00
   STA $2006                    ; write the low byte of $3F00 address
   LDX #$00                     ; start out at 0
-LoadPalettesLoop:              ; 
+@loop:                         ; 
   LDA palette, x               ; load data from address (palette + the value in x)
   STA $2007                    ; write to PPU
   INX                          ; X = X + 1
   CPX #$20                     ; Compare X to hex $10, decimal 16 - copying 16 bytes = 4 sprites
-  BNE LoadPalettesLoop
+  BNE @loop
 
 ;; sprite
 
@@ -207,13 +207,13 @@ updateFollower:                ;
 updateFollowerX:               ; 
   LDA $0207                    ; follower x
   CMP $0203                    ; sprite x
-  BEQ updateFollowerXDone
-  BCC updateFollowerXINC
+  BEQ @done
+  BCC @inc
   DEC $0207
   RTS
-updateFollowerXINC:            ; 
+@inc:                          ; 
   INC $0207
-updateFollowerXDone:           ; 
+@done:                         ; 
   RTS
 
 ;; y
@@ -221,13 +221,13 @@ updateFollowerXDone:           ;
 updateFollowerY:               ; 
   LDA $0204                    ; follower x
   CMP $0200                    ; sprite x
-  BEQ updateFollowerYDone
-  BCC updateFollowerYINC
+  BEQ @done
+  BCC @inc
   DEC $0204
   RTS
-updateFollowerYINC:            ; 
+@inc:                          ; 
   INC $0204
-updateFollowerYDone:           ; 
+@done:                         ; 
   RTS
 
 ;; tables
