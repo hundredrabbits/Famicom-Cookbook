@@ -22,7 +22,7 @@ spriteRAM       .equ $0200
 
 ;;
 
-    .org $C000
+  .org $C000
 
 ;; reset
 
@@ -128,6 +128,10 @@ animate:                       ;
   RTS
 
 ;; TABLES
+
+  .org $E000
+  
+;;
 
 palette:                       ; 
   .db $0F,$0F,$0F,$0F,  $0F,$20,$20,$0F,  $0F,$20,$0F,$20,  $0F,$20,$20,$20; background palette

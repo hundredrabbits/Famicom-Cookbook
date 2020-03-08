@@ -26,6 +26,9 @@ PPU_Scroll      .equ $2005
 PPU_Address     .equ $2006
 PPU_Data        .equ $2007
 spriteRAM       .equ $0200
+
+;;
+
   .org $C000
 
 ;;  RESET
@@ -230,6 +233,10 @@ updateFollowerY:               ;
 @done:                         ; 
   RTS
 
+;;
+
+  .org $E000
+  
 ;; tables
 
 palette:                       ; 
