@@ -1,4 +1,6 @@
 
+;; This examples has no visuals, inspect the zeropage memory to monitor changes.
+
 ;;  iNES HEADER
 
   .db  "NES", $1a              ; identification of the iNES header
@@ -11,7 +13,9 @@
 ;; VARIABLES
 
   .enum $0000                  ; Zero Page variables
-input_timer
+input_timer             .dsb 1
+deck_len                .dsb 1
+hand                    .dsb 1
   .ende
 
 ;; CONSTANTS
@@ -118,13 +122,13 @@ LatchController:               ;
   LDA $4016
   AND #%00000001               ; only look at BIT 0
   BEQ @b
-  JSR pullDeck
+  JSR takeCard
   JSR lockInput
 @b:                            ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
   BEQ @done
-  JSR pullDeck
+  JSR putCard
   JSR lockInput
 @done:                         ; handling this button is done
   RTI                          ; return from interrupt
@@ -132,6 +136,9 @@ LatchController:               ;
 ;; Deck: Create a deck of 54($36) cards, from zeropage $40
 
 InitDeck:                      ; 
+  ; set deck length
+  LDA #$35
+  STA deck_len
   LDX #$00
 @loop:                         ; 
   TXA
@@ -141,9 +148,36 @@ InitDeck:                      ;
   BNE @loop
   RTS
 
+;; take last card from the deck
+
+takeCard:                      ; 
+  LDA $40
+  STA hand
+  JSR shiftDeck
+  RTS
+
+;; put last card back into the deck
+
+putCard:                       ; 
+  ; check if has card in hand
+  LDA hand
+  CMP #$00
+  BEQ @done                    ; no card to return
+  ; return card
+  LDX deck_len
+  INX
+  STA $40,x
+  INC deck_len
+  ; empty hand
+  LDA #$00
+  STA hand
+@done
+  RTS
+
 ;;
 
-pullDeck:                      ; 
+shiftDeck:                     ; 
+  DEC deck_len
   LDX #$00
 @loop:                         ; 
   TXA
@@ -154,10 +188,8 @@ pullDeck:                      ;
   INX
   CPX #$36
   BNE @loop
+@done
   RTS
-
-;;
-
 lockInput:                     ; 
   LDA #$06
   STA input_timer

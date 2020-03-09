@@ -1,3 +1,4 @@
+;; This examples has no visuals, inspect the zeropage memory to monitor changes.
 
 ;;  iNES HEADER
 
