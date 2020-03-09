@@ -11,9 +11,7 @@
 ;; VARIABLES
 
   .enum $0000                  ; Zero Page variables
-seed                    .dsb 1
-seed1                   .dsb 1
-seed2                   .dsb 1
+input_timer
   .ende
 
 ;; CONSTANTS
@@ -65,7 +63,105 @@ vblankwait2:                   ; Second wait for vblank, PPU is ready after this
 
 ;;
 
-include "src/main.asm"
+LoadPalettes:                  ; 
+  LDA $2002                    ; read PPU status to reset the high/low latch
+  LDA #$3F
+  STA $2006                    ; write the high byte of $3F00 address
+  LDA #$00
+  STA $2006                    ; write the low byte of $3F00 address
+  LDX #$00
+@loop:                         ; 
+  LDA palette, x               ; load palette byte
+  STA $2007                    ; write to PPU
+  INX                          ; set index to next byte
+  CPX #$20
+  BNE @loop                    ; if x = $20, 32 bytes copied, all done
+
+;; start render
+
+  LDA #%10000000               ; enable NMI, sprites from Pattern Table 1
+  STA $2000
+  LDA #%00010000               ; enable sprites
+  STA $2001
+
+;; let's do it
+
+  JSR InitDeck
+
+;;
+
+Forever:                       ; 
+  JMP Forever                  ; jump back to Forever, infinite loop
+
+;;
+
+NMI:                           ; 
+  LDA #$00
+  STA $2003                    ; set the low byte (00) of the RAM address
+  LDA #$02
+  STA $4014                    ; set the high byte (02) of the RAM address, start the transfer
+checkInputLock:                ; 
+  LDA input_timer
+  CMP #$00
+  BEQ LatchController
+  DEC input_timer
+  RTI
+
+;;
+
+LatchController:               ; 
+  LDA #$01
+  STA $4016
+  LDA #$00
+  STA $4016                    ; tell both the controllers to latch buttons
+@a:                            ; 
+  LDA $4016
+  AND #%00000001               ; only look at BIT 0
+  BEQ @b
+  JSR pullDeck
+  JSR lockInput
+@b:                            ; 
+  LDA $4016
+  AND #%00000001               ; only look at BIT 0
+  BEQ @done
+  JSR pullDeck
+  JSR lockInput
+@done:                         ; handling this button is done
+  RTI                          ; return from interrupt
+
+;; Deck: Create a deck of 54($36) cards, from zeropage $40
+
+InitDeck:                      ; 
+  LDX #$00
+@loop:                         ; 
+  TXA
+  STA $40, x
+  INX
+  CPX #$36
+  BNE @loop
+  RTS
+
+;;
+
+pullDeck:                      ; 
+  LDX #$00
+@loop:                         ; 
+  TXA
+  TAY
+  INY
+  LDA $40, y
+  STA $40, x
+  INX
+  CPX #$36
+  BNE @loop
+  RTS
+
+;;
+
+lockInput:                     ; 
+  LDA #$06
+  STA input_timer
+  RTS
 
 ;; tables
 
@@ -76,29 +172,6 @@ include "src/main.asm"
 palette:                       ; 
   .db $0F,$2D,$16,$2D, $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F
   .db $0F,$10,$17,$07, $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F, $0F,$0F,$0F,$0F
-
-;; shuffles
-
-shuffleA:                      ; 
-  .db $03,$10,$18,$23,$32,$0f,$06,$2a,$1e,$0b,$34,$17,$0c,$19
-  .db $07,$11,$35,$21,$31,$12,$2e,$02,$08,$16,$1f,$1a,$25,$00
-  .db $33,$0e,$05,$1d,$26,$13,$1b,$0d,$22,$2b,$28,$29,$20,$1c
-  .db $09,$24,$14,$04,$27,$2f,$30,$0a,$2c,$2d,$01,$15
-shuffleB:                      ; 
-  .db $1e,$0a,$13,$18,$2b,$02,$08,$0d,$06,$20,$33,$30,$34,$03
-  .db $12,$10,$1d,$15,$25,$1c,$22,$28,$21,$04,$07,$26,$23,$01
-  .db $2a,$17,$0c,$2d,$32,$2c,$29,$09,$0e,$11,$19,$2f,$31,$1a
-  .db $1f,$0f,$2e,$16,$24,$1b,$14,$27,$0b,$05,$35,$00
-shuffleC:                      ; 
-  .db $19,$34,$1b,$29,$2b,$15,$16,$1c,$11,$1f,$27,$01,$1d,$0f
-  .db $30,$06,$14,$0a,$31,$05,$20,$26,$2c,$00,$0c,$1e,$22,$0b
-  .db $33,$07,$04,$0d,$2a,$2f,$08,$28,$23,$21,$25,$12,$0e,$2e
-  .db $18,$03,$1a,$10,$32,$35,$09,$24,$13,$2d,$02,$17
-shuffleD:                      ; 
-  .db $29,$01,$09,$32,$20,$08,$1c,$19,$18,$30,$23,$05,$1b,$1d
-  .db $0c,$13,$03,$0a,$1f,$12,$0b,$21,$1e,$04,$25,$35,$0d,$16
-  .db $14,$2a,$00,$15,$06,$33,$17,$24,$0e,$34,$2e,$11,$10,$2c
-  .db $07,$2d,$22,$1a,$02,$0f,$27,$26,$28,$31,$2b,$2f
 
 ;; vectors
 

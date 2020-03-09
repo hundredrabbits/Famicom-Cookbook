@@ -38,7 +38,12 @@ NMI:                           ;
   STA $2003                    ; set the low byte (00) of the RAM address
   LDA #$02
   STA $4014                    ; set the high byte (02) of the RAM address, start the transfer
-  JSR RunTimer
+checkInputLock:                ; 
+  LDA input_timer
+  CMP #$00
+  BEQ LatchController
+  DEC input_timer
+  RTI
 
 ;;
 
@@ -52,12 +57,14 @@ LatchController:               ;
   AND #%00000001               ; only look at BIT 0
   BEQ @b
   JSR pullDeck
+  JSR lockInput
 @b:                            ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
   BEQ @done
   JSR pullDeck
-@done:                     ; handling this button is done
+  JSR lockInput
+@done:                         ; handling this button is done
   RTI                          ; return from interrupt
 
 ;; Deck: Create a deck of 54($36) cards, from zeropage $40
@@ -65,9 +72,31 @@ LatchController:               ;
 InitDeck:                      ; 
   LDX #$00
 @loop:                         ; 
-  TXA 
+  TXA
   STA $40, x
   INX
   CPX #$36
   BNE @loop
+  RTS
+
+;;
+
+pullDeck:                      ; 
+  LDX #$00
+@loop:                         ; 
+  TXA
+  TAY
+  INY
+  LDA $40, y
+  STA $40, x
+  INX
+  CPX #$36
+  BNE @loop
+  RTS
+
+;;
+
+lockInput:                     ; 
+  LDA #$06
+  STA input_timer
   RTS
