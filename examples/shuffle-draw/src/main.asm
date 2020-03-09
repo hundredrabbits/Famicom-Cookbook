@@ -15,14 +15,14 @@ LoadPalettes:                  ;
   CPX #$20
   BNE @loop                    ; if x = $20, 32 bytes copied, all done
 
-;;
+;; start render
 
   LDA #%10000000               ; enable NMI, sprites from Pattern Table 1
   STA $2000
   LDA #%00010000               ; enable sprites
   STA $2001
 
-;;
+;; let's do it
 
   JSR InitDeck
 
@@ -47,31 +47,17 @@ LatchController:               ;
   STA $4016
   LDA #$00
   STA $4016                    ; tell both the controllers to latch buttons
-
-;;
-
 @a:                            ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
   BEQ @b
-  JSR CollapseDeck
+  JSR pullDeck
 @b:                            ; 
   LDA $4016
   AND #%00000001               ; only look at BIT 0
-  BEQ ReadBDone
-  ; shuffle
-  JSR ShuffleDeckA
-  LDA seed
-  CMP #$00
-  BEQ ReadBDone
-  JSR ShuffleDeckB
-  CMP #$01
-  BEQ ReadBDone
-  JSR ShuffleDeckC
-  ; CMP #$02
-  ; BEQ ReadBDone
-  ; BNE ShuffleDeckD
-ReadBDone:                     ; handling this button is done
+  BEQ @done
+  JSR pullDeck
+@done:                     ; handling this button is done
   RTI                          ; return from interrupt
 
 ;; Deck: Create a deck of 54($36) cards, from zeropage $40
@@ -79,89 +65,9 @@ ReadBDone:                     ; handling this button is done
 InitDeck:                      ; 
   LDX #$00
 @loop:                         ; 
-  LDA shuffleA, x
+  TXA 
   STA $40, x
   INX
   CPX #$36
   BNE @loop
-  RTS
-
-;;
-
-ShuffleDeckA:                  ; 
-  LDX #$00
-@loop:                         ; 
-  LDY shuffleA, x              ; store the value
-  LDA $40, y
-  STA $90, x
-  INX
-  CPX #$36
-  BNE @loop
-  RTS
-
-;;
-
-ShuffleDeckB:                  ; 
-  LDX #$00
-@loop:                         ; 
-  LDY shuffleB, x              ; store the value
-  LDA $40, y
-  STA $90, x
-  INX
-  CPX #$36
-  BNE @loop
-  RTS
-
-;;
-
-ShuffleDeckC:                  ; 
-  LDX #$00
-@loop:                         ; 
-  LDY shuffleC, x              ; store the value
-  LDA $40, y
-  STA $90, x
-  INX
-  CPX #$36
-  BNE @loop
-  RTS
-
-;;
-
-ShuffleDeckD:                  ; 
-  LDX #$00
-@loop:                         ; 
-  LDY shuffleD, x              ; store the value
-  LDA $40, y
-  STA $90, x
-  INX
-  CPX #$36
-  BNE @loop
-  RTS
-
-;;
-
-CollapseDeck:                  ; 
-  LDX #$00                     ; x = where I write
-@loop:                         ; 
-  LDA $90, x
-  STA $40, x
-  INX
-  CPX #$36
-  BNE @loop
-  RTS
-
-;;
-
-RunTimer:                      ; 
-  INC seed
-  LDA seed
-  CMP #$04
-  BEQ ResetTimer
-  RTS
-
-;;
-
-ResetTimer:                    ; 
-  LDA #$00
-  STA seed
   RTS
