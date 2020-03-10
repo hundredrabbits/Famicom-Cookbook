@@ -2,7 +2,6 @@
 ;; This examples has no visuals, inspect the zeropage memory to monitor changes.
 
 ;;  iNES HEADER
-
   .db  "NES", $1a              ; identification of the iNES header
   .db  1                       ; number of 16KB PRG-ROM pages
   .db  $01                     ; number of 8KB CHR-ROM pages
@@ -13,20 +12,7 @@
 ;; VARIABLES
 
   .enum $0000                  ; Zero Page variables
-input_timer             .dsb 1
-deck_len                .dsb 1
-deck_hand               .dsb 1
   .ende
-
-;; CONSTANTS
-
-PPU_Control         .equ $2000
-PPU_Mask            .equ $2001
-PPU_Status          .equ $2002
-PPU_Scroll          .equ $2005
-PPU_Address         .equ $2006
-PPU_Data            .equ $2007
-spriteRAM           .equ $0200
 
 ;;
 
@@ -45,25 +31,39 @@ RESET:                         ;
   STX $2000                    ; disable NMI
   STX $2001                    ; disable rendering
   STX $4010                    ; disable DMC IRQs
-vblankwait1:                   ; First wait for vblank to make sure PPU is ready
+@vwait1:                       ; First wait for vblank to make sure PPU is ready
   BIT $2002
-  BPL vblankwait1
-clrmem:                        ; 
-  LDA #$00
-  STA $0000, x
-  STA $0100, x
-  STA $0300, x
-  STA $0400, x
-  STA $0500, x
-  STA $0600, x
-  STA $0700, x
-  LDA #$FE
-  STA $0200, x                 ; move all sprites off screen
+  BPL @vwait1                  ; at this point, about 27384 cycles have passed
+@vwait2:                       ; Second wait for vblank, PPU is ready after this
   INX
-  BNE clrmem
-vblankwait2:                   ; Second wait for vblank, PPU is ready after this
+  BNE @noincy
+  INY
+@noincy:                       ; 
   BIT $2002
-  BPL vblankwait2
+  BPL @vwait2                  ; at this point, about 57165 cycles have passed
+
+;;
+
+; BUT because of a hardware oversight, we might have missed a vblank flag.
+; so we need to both check for 1Vbl AND 2Vbl
+; NTSC NES: 29780 cycles / 12.005 -> $9B0 or $1361 (Y:X)
+; PAL NES:  33247 cycles / 12.005 -> $AD1 or $15A2
+; Dendy:    35464 cycles / 12.005 -> $B8A or $1714
+  TYA
+  CMP #16
+  BCC @nodiv2
+  LSR
+@nodiv2:                       ; 
+  CLC
+  ADC #<-9
+  CMP #3
+  BCC @noclip3
+  LDA #3
+@noclip3:                      ; 
+
+;;; Right now, A contains 0,1,2,3 for NTSC,PAL,Dendy,Bad
+
+  STA $00
 
 ;;
 
@@ -88,10 +88,6 @@ LoadPalettes:                  ;
   LDA #%00010000               ; enable sprites
   STA $2001
 
-;; let's do it
-
-  JSR InitDeck
-
 ;;
 
 Forever:                       ; 
@@ -104,96 +100,7 @@ NMI:                           ;
   STA $2003                    ; set the low byte (00) of the RAM address
   LDA #$02
   STA $4014                    ; set the high byte (02) of the RAM address, start the transfer
-checkInputLock:                ; 
-  LDA input_timer
-  CMP #$00
-  BEQ LatchController
-  DEC input_timer
-  RTI
-
-;;
-
-LatchController:               ; 
-  LDA #$01
-  STA $4016
-  LDA #$00
-  STA $4016                    ; tell both the controllers to latch buttons
-@a:                            ; 
-  LDA $4016
-  AND #%00000001               ; only look at BIT 0
-  BEQ @b
-  JSR takeCard
-  JSR lockInput
-@b:                            ; 
-  LDA $4016
-  AND #%00000001               ; only look at BIT 0
-  BEQ @done
-  JSR putCard
-  JSR lockInput
-@done:                         ; handling this button is done
   RTI                          ; return from interrupt
-
-;; Deck: Create a deck of 54($36) cards, from zeropage $40
-
-InitDeck:                      ; 
-  ; set deck length
-  LDA #$35
-  STA deck_len
-  LDX #$00
-@loop:                         ; 
-  TXA
-  STA $40, x
-  INX
-  CPX #$36
-  BNE @loop
-  RTS
-
-;; take last card from the deck
-
-takeCard:                      ; 
-  LDA $40
-  STA deck_hand
-  JSR shiftDeck
-  RTS
-
-;; put last card back into the deck
-
-putCard:                       ; 
-  ; check if has card in hand
-  LDA deck_hand
-  CMP #$00
-  BEQ @done                    ; no card to return
-  ; return card
-  LDX deck_len
-  INX
-  STA $40,x
-  INC deck_len
-  ; empty hand
-  LDA #$00
-  STA deck_hand
-@done
-  RTS
-
-;;
-
-shiftDeck:                     ; 
-  DEC deck_len
-  LDX #$00
-@loop:                         ; 
-  TXA
-  TAY
-  INY
-  LDA $40, y
-  STA $40, x
-  INX
-  CPX #$36
-  BNE @loop
-@done
-  RTS
-lockInput:                     ; 
-  LDA #$06
-  STA input_timer
-  RTS
 
 ;; tables
 
