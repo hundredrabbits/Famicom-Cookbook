@@ -27,6 +27,14 @@ LoadPalettesLoop:
   LDA #$05
   STA $01    ; memory addr B
 
+  ; opposite value
+
+  LDA #$00
+  SBC #$10
+  STA $02
+
+  ;
+
   JSR Update
 
 Forever:
