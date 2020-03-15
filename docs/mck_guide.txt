@@ -1,0 +1,692 @@
+////////////////////////////////////////////////////////
+//// MCK/MML BEGINNERS GUIDE ///////////////////////////
+//// by nullsleep ////////// product of 8bitpeoples ////
+//// version 1.0 /////////// Research & Development ////
+////////////////////////////////////////////////////////
+
+*******************************************************************************
+** OBJECTIVE ******************************************************************
+*******************************************************************************
+
+This document is aimed at providing the reader with everything that is needed 
+in order to begin programming NES tunes with MCK/MML. It outlines all the steps
+required in the process, the initial organization of the MCK/MML workspace, the
+conventions in programming each of the sound channels of the NES including 
+some of the most common and useful MML commands and effects, and finally 
+generating an NSF file and troubleshooting any problems that might come up 
+during this process.
+
+Thanks: Izumi, Manbow-J, Norix, Virt, Memblers, and everyone at MCK 2ch.
+
+*******************************************************************************
+** MCK/MML WORKSPACE SETUP ****************************************************
+*******************************************************************************
+
+Download Necessary Files
+-------------------------------------------------------------------------------
+mck_0228.zip
+mckc025.zip
+dmcconv005.zip
+mckc-e.txt
+- currently available from:
+http://www.geocities.co.jp/Playtown-Denei/9628/
+
+mkit251_dos.zip
+- currently available from:
+http://www.magicengine.com/mkit/download.html
+
+
+Organize MCK/MML Workspace
+-------------------------------------------------------------------------------
+Create a folder called 'workspace' and unzip all the files contained in 
+mck_0228.zip into this folder. Next, extract all files from mckc025.zip into 
+this same folder. Now extract ONLY nesasm.exe from the mkit251_dos.zip into 
+the 'workspace' folder. None of the other magickit files will be needed. The 
+'source' folder that was extracted from the mckc zip into the 'workspace' may 
+also be deleted. Finally, create a new folder inside 'workspace' called 
+'DMCconv' and extract the files from dmcconv005.zip into this folder.
+
+
+Create and Modify Files
+-------------------------------------------------------------------------------
+Create a new text file, call it songdata.mml and place it in your 'workspace' 
+folder. This is the text file where you will use MML (music macro language) to 
+program your tune. But first, there are some other things that must be setup. 
+Open make_nsf.txt and scroll to the end of the file where there will be a 
+number of .include statements. After the last one, add this line to the file:
+
+	.include	"songdata.h"
+
+also look for these lines in make_nsf.txt:
+
+  .org	$800E
+	db	"Song Name"
+	db	$00
+  .org	$802E
+	db	"Artist"
+	db	$00
+  .org	$804E
+	db	"Maker"
+	db	$00
+
+This is the part of the NSF header that identifies the tune. It should be 
+obvious from the hex values of the org statements that there is only a limited 
+amount of space for each of the fields, the max length being 31 characters. You
+should modify these header fields appropriately as seen below, keeping in mind 
+the 31 character limit:
+
+  .org	$800E
+	db	"My First NES Chip"
+	db	$00
+  .org	$802E
+	db	"Nullsleep"
+	db	$00
+  .org	$804E
+	db	"2003 Jeremiah Johnson"
+	db	$00
+
+
+*******************************************************************************
+** GENERATING THE NSF FILE ****************************************************
+*******************************************************************************
+
+Create another new text file, open it up and type the following:
+
+mckc_e songdata.mml
+del nesmusic.nsf
+nesasm -raw make_nsf.txt
+ren make_nsf.nes nesmusic.nsf
+
+Save the file, close it, and rename it build.bat, this is a simple batch file 
+that will run all of the commands to generate an NSF file from the MML data. 
+First it uses mckc to convert songdata.mml into a chunk of data in songdata.h 
+that nesasm will then be compile along with the MCK sound driver code into an 
+NSF file. By this point everything should be setup properly, so now you can 
+get started on programming MML.
+
+
+*******************************************************************************
+** BASIC SONG SETUP ***********************************************************
+*******************************************************************************
+
+Header Credits
+-------------------------------------------------------------------------------
+After opening up songdata.mml in your preferred text editor, the first thing 
+you should do is add the header lines to the top of the file to identify 
+yourself as the composer and note the title of the song. For example:
+
+#TITLE My First NES Chip
+#COMPOSER Nullsleep
+#PROGRAMER 2003 Jeremiah Johnson
+
+This is an optional step, however it is highly recommended, especially if the 
+MML files will be released publicly. On a side note, the incorrect spelling of 
+#PROGRAMER is a typo within MCK itself, and therefore must be used.
+
+Channel Layout
+-------------------------------------------------------------------------------
+The NES has 5 channels to work with, and they are defined in MML as follows:
+
+A this is the first pulse channel
+B this is the second pulse channel
+C this is the triangle channel
+D this is the noise channel
+E this is the dpcm channel
+
+This guide will cover the programming conventions for each of these channels, 
+with A+B being covered together since their operation is identical.
+
+
+Tempo Settings
+-------------------------------------------------------------------------------
+Tempo can be set individually for each channel, however its likely that you 
+will usually want all channels to be playing at the same speed to keep 
+everything in sync. The tempo for all channels can be set simultaneously like 
+this:
+
+ABCDE t150
+
+In MML notation this is saying, for channels A, B, C, D, and E set the tempo 
+to 150 beats per minute. The valid range of values for tempo is 1 to 255.
+
+
+Volume Settings
+-------------------------------------------------------------------------------
+The pulse wave channels (A+B) and the noise channel (D) of the NES have volume 
+control, while the triangle wave channel (C) and the DPCM channel (E) can only 
+be turned ON or OFF. For the pulse and noise channels, there are two options 
+for setting volume. The first is to just set a constant volume level, by doing 
+something like this:
+
+A v15
+
+Which would set the volume level for channel A to 15, which is the highest 
+volume level available. However, in most cases using a volume envelope is 
+probably a much better choice than setting a constant volume.
+
+Setting up a basic volume envelopes is simple. If neither a constant volume nor
+a volume envelope is defined for the pulse channels (A+B) or the noise channel 
+(D), you will not hear any sound output on these channels. Here is a simple 
+volume envelope example:
+
+@v0 = { 10 9 8 7 6 5 4 3 2 }
+
+The volume envelope takes values between 0 and 15. The highest volume being 15,
+and 0 being silence. This volume envelope starts off at a high volume and 
+quickly decays down to a low volume, this last value will be held until another
+note is played. You can easily modify the volume envelope or setup more, 
+further examples will be given, including setting loop points within the 
+envelope.
+
+
+*******************************************************************************
+** PULSE WAVE CHANNELS (A+B) **************************************************
+*******************************************************************************
+
+Initialization
+-------------------------------------------------------------------------------
+The next step is setting up each channel individually with the properties it 
+requires, such as note length, octave, duty cycle (for the pulse channels), and
+volume envelope. Here is a possible setup for one of the pulse wave channels:
+
+A l8 o4 @01 @v0
+
+Which translates to, for channel A set the default note length to eighth notes,
+set the octave to the 4th octave, set the duty cycle setting to 01 (25% duty 
+cycle), and use volume envelope 0 (which was defined above). A quick 
+explanation of the duty cycle setting follows.
+
+
+Duty Cycle Explanation
+-------------------------------------------------------------------------------
+You can think of a pulse wave as a square wave with a variable width. In a 
+square wave the width is fixed at 50% (half up and half down), but pulse waves 
+have more flexibility. This flexibility is referred to as the duty cycle (or 
+sometimes the timbre) of the pulse wave. Below are the 4 possible duty cycle 
+settings for the pulse wave channels on the NES.
+
+       _
+00    | |             |  12.5% thin raspy sound
+      | |_____________|
+       ___
+01    |   |           |  25% thick fat sound
+      |   |___________|
+       _______
+02    |       |       |  50% smooth clear sound
+      |       |_______|
+       ___________
+03    |           |   |  75% same as 25% but phase-inverted
+      |           |___|
+
+
+Programming the Pulse Channel
+-------------------------------------------------------------------------------
+Now that the pulse channel (A) should be completely setup, here is a little 
+note sequence that can be programmed on it.
+
+A c d e f g4 a16 b16 >c c d e f g4 a16 b16 >c<<
+
+If you know standard music notation most of what you see should look atleast 
+somewhat familiar. Additionally, the use of sharps and flats is accomplished by
+adding either a + or - (respectively) after the note value. Making the notes in
+an octave:
+
+       c+ d+    f+ g+ a+
+    |  #  #  |  #  #  #  |  additionally:
+    |  #  #  |  #  #  #  |  r = rest
+    |  #  #  |  #  #  #  |  w = wait (rest without silencing the previous note)
+    |__|__|__|__|__|__|__|
+     c  d  e  f  g  a  b 
+
+Since the default note length for channel A was set to eighth notes, the above 
+melody is playing c b e f notes for an eighth length each, then the g4 which 
+plays g for a quarter length, followed by a16 b16 which play an a note and b 
+note for a sixteenth length each. Next is the > symbol, this switches an octave
+UP (so now we are in the 5th octave) and then a 5th octave c eighth note is 
+played. Now the scale is repeated again, before finally switching back down 2 
+octaves (to the original 4th octave we set for the channel). Additionally, in 
+reference to note duration it is possible to use dotted notes, which should 
+again be familiar to those with knowledge of standard music notation. Dotting 
+a note increases the duration of that note by half of its value. These examples
+should help illustrate this:
+
+c8. = c note played for an eighth plus a sixteenth
+d4. = d note played for a quarter plus an eighth
+e4.. = e note played for a quarter plus an eighth plus a sixteenth
+f2.. = f note played for a half plus a quarter plus an eighth
+
+Now, getting back to the above example programmed on the first pulse wave
+channel (A), notice that this sequence will only play once. The full sequence 
+or small portions of it can be looped using brackets followed by a loop count 
+as shown below:
+
+A [c d e f g4 a16 b16 >c c d e f g4 a16 b16 >c<<]2
+
+This will loop the entire sequence twice. This can be handy for keeping your 
+MML code clean and saving you some unnecessary typing. To give this sequence a 
+little more of a dynamic feel another volume envelope can be setup and the two 
+can be switched back and forth. Ending up with something like this:
+
+#TITLE My First NES Chip
+#COMPOSER Nullsleep
+#PROGRAMER 2003 Jeremiah Johnson
+
+@v0 = { 10 9 8 7 6 5 4 3 2 }
+@v1 = { 15 15 14 14 13 13 12 12 11 11 10 10 9 9 8 8 7 7 6 6 }
+
+ABCDE t150
+
+A l8 o4 @01 @v0
+A [c d e f @v1 g4 @v0 a16 b16 >c c d e f @v1 g4 @v0 a16 b16 >c<<]2
+
+This volume envelope switching will put a slight emphasis on the quarter notes 
+because of the higher initial volume setting of the new volume envelope and its
+slower decay rate. All of this can be applied identically to the second pulse 
+channel (B) as well.
+
+
+*******************************************************************************
+** TRIANGLE WAVE CHANNEL (C) **************************************************
+*******************************************************************************
+
+Initialization
+-------------------------------------------------------------------------------
+The operation of the triangle wave channel (C) is similar to the pulse wave 
+channels with the exception of volume envelope and duty cycle parameters. The 
+triangle channel has no volume control, it is either ON or OFF and therefore 
+volume envelopes can not be used. Likewise, duty cycle settings only apply to 
+the pulse channels and can be disregarded when using the triangle channel. 
+Taking these things into consideration, the initial setup of the triangle 
+channel is fairly straightforward:
+
+C l4 o3 q6
+
+Which translates to, for channel C set the default note length to quarter 
+notes, set the octave to the 3rd octave, and finally set q6. This setting might
+be confusing, but what it does is cuts the notes played back on this channel 
+slightly. The q stands for quantize and it can take values from 1 to 8. Notes 
+are divided into 8 equal parts and what this value determines is how many 
+eighths of the note to play before cutting it. For example, the q6 setting we 
+used will cut the note after 6/8ths of it has played. This will help give 
+basslines a bit of a snappier rhythm than if the notes were just allowed to 
+sound continuously.
+
+
+Programming the Triangle Channel
+-------------------------------------------------------------------------------
+Here is a little example of a bassline sequence on the triangle channel:
+
+C c e g8 g8 a16 b16 >c8 c e g8 g8 a16 b16 >c8<<
+
+Add this into the MML covered so far, and loop it 4 times. This way its first 
+heard along with whats playing on the pulse wave channel (A) and then it can be
+heard alone.
+
+#TITLE My First NES Chip
+#COMPOSER Nullsleep
+#PROGRAMER 2003 Jeremiah Johnson
+
+@v0 = { 10 9 8 7 6 5 4 3 2 }
+@v1 = { 15 15 14 14 13 13 12 12 11 11 10 10 9 9 8 8 7 7 6 6 }
+
+ABCDE t150
+
+A l8 o4 @01 @v0
+A [c d e f @v1 g4 @v0 a16 b16 >c c d e f @v1 g4 @v0 a16 b16 >c<<]2
+
+C l4 o3 q6
+C [c e g8 g8 a16 b16 >c8 c e g8 g8 a16 b16 >c8<<]4
+
+
+*******************************************************************************
+** NOISE CHANNEL (D) **********************************************************
+*******************************************************************************
+
+Noise Channel Explanation
+-------------------------------------------------------------------------------
+The noise channel (D) can be a fairly versatile instrument with a bit of work. 
+Waves crashing on a beach, rocket engines roaring, dark fiery dungeon sounds, 
+and supplemental percussion to enhance your drum samples are a few possible 
+applications. Like the pulse wave channels, volume envelopes are used by the 
+noise channel and are an important part of getting good sounds out of it. 
+Additionally it has 2 modes of operation: normal and looped noise. The looped 
+noise setting can be used to generate interesting, somewhat metallic sounds. 
+The pitch range of the noise channel is very limited and loops every octave, 
+making octave changing unnecessary. The c note seems to be the high pitch, with
+the pitch moving slightly downwards over e, f, g, a, and finally to the b note 
+which seems to be the lowest pitched. 
+
+
+Initialization
+-------------------------------------------------------------------------------
+Here are a couple of simple volume envelopes that can be used for some basic 
+percussion on the noise channel:
+
+@v2 = { 15 12 10 8 6 3 2 1 0 }
+@v3 = { 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0 }
+
+After setting up the volume envelopes the channel should be initialized:
+
+D l4 o1 @0 @v2
+
+Which translates to, for channel D set the default note length to quarter 
+notes, set the octave to the 1st octave, set the noise mode to normal (@1 would
+be used to turn on looped noise), and use volume envelope 2.
+
+
+Programming the Noise Channel
+-------------------------------------------------------------------------------
+Here is a little sequence of simple noise drums:
+
+D @v2 b @v3 e @v2 b @v3 e @v2 b @v3 e @v2 b @v3 e8 @v2 b8
+
+Add this into the MML covered so far, and loop it 4 times.
+
+#TITLE My First NES Chip
+#COMPOSER Nullsleep
+#PROGRAMER 2003 Jeremiah Johnson
+
+@v0 = { 10 9 8 7 6 5 4 3 2 }
+@v1 = { 15 15 14 14 13 13 12 12 11 11 10 10 9 9 8 8 7 7 6 6 }
+@v2 = { 15 12 10 8 6 3 2 1 0 }
+@v3 = { 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0 }
+
+ABCDE t150
+
+A l8 o4 @01 @v0
+A [c d e f @v1 g4 @v0 a16 b16 >c c d e f @v1 g4 @v0 a16 b16 >c<<]2
+
+C l4 o3 q6
+C [c e g8 g8 a16 b16 >c8 c e g8 g8 a16 b16 >c8<<]4
+
+D l4 o1 @0 @v2
+D [@v2 b @v3 e @v2 b @v3 e @v2 b @v3 e @v2 b @v3 e8 @v2 b8]4
+
+
+*******************************************************************************
+** DPCM CHANNEL (E) ***********************************************************
+*******************************************************************************
+
+DPCM Channel Explanation
+-------------------------------------------------------------------------------
+The DPCM channel, or delta modulation channel (DMC) as it is also sometimes 
+referred to, is used for sample playback on the NES. This can be useful for 
+programming drums, sampled basslines, or even vocal samples. Its operation is 
+simple and fairly straightforward, with very few parameters that must be set. 
+Like the triangle wave channel there is no volume control, the DPCM channel is 
+either ON or OFF. Additionally, the NES uses its own 1-bit sample format, which
+ you will have to convert your samples to before doing anything else. This 
+process is described in the next section.
+
+
+Creating DPCM Samples
+-------------------------------------------------------------------------------
+DMCconv is the program that will be used to convert your samples from .wav to 
+.bin for use with MCK.  The documentation for DMCconv is not in english, 
+however its operation is simple enough so that this should not be a problem. 
+Below is the description of its usage:
+
+Usage: DMCconv wavefile outfile 
+ Options
+ -r?  DMC Sampling rate(0-F) (Default:F 33.14KHz)
+      0: 4.18KHz  1: 4.71KHz  2: 5.26KHz  3: 5.59KHz
+      4: 6.26KHz  5: 7.05KHz  6: 7.92KHz  7: 8.36KHz
+      8: 9.42KHz  9:11.18KHz  A:12.60KHz  B:13.98KHz
+      C:16.88KHz  D:21.30KHz  E:24.86KHz  F:33.14KHz
+ -v?  Volume(Default:100)
+ -n   Volume not adjust(Default:Adjust)
+ -b   Bank size padding(Default:No padding)
+
+For example: DMCconv kick.wav kick.dmc
+would convert a kick.wav file into a kickdrum sample useable by the NES with 
+all of the default settings. 
+
+
+Initialization and Programming the DPCM Channel
+-------------------------------------------------------------------------------
+Once all desired samples are converted, create a directory called 'samples' 
+within the 'workspace' folder and include the samples and initialize the 
+channel in the mml as follows:
+
+@DPCM0 = { "samples\kick.dmc",15 }
+@DPCM2 = { "samples\snare.dmc",15 }
+
+E o0 l4
+
+The first sample, kick.dmc, will be mapped to @DPCM0 which corresponds to the 
+c note on octave 0. You will then notice that the second sample, snare.dmc, is 
+mapped @DPCM2 which corresponds to the d note ... @DPCM1 is skipped over to 
+avoid mapping samples to sharps/flats in order to keep the MML more readable. 
+For example, which of the following is easier to recognize as alternating kick 
+and snare drumbeats?
+
+E c d c d c d c d8 c8
+
+or 
+
+E c c+ c c+ c c+ c c+8 c8 
+
+It should be apparent that the first one is more recognizeable, and this 
+increased readability will be further appreciated when programming more complex
+or lengthy drum sequences. Looping this and adding it to the MML programmed so 
+far gives us something like:
+
+#TITLE My First NES Chip
+#COMPOSER Nullsleep
+#PROGRAMER 2003 Jeremiah Johnson
+
+@v0 = { 10 9 8 7 6 5 4 3 2 }
+@v1 = { 15 15 14 14 13 13 12 12 11 11 10 10 9 9 8 8 7 7 6 6 }
+@v2 = { 15 12 10 8 6 3 2 1 0 }
+@v3 = { 15 14 13 12 11 10 9 8 7 6 5 4 3 2 1 0 }
+
+@DPCM0 = { "samples\kick.dmc",15 }
+@DPCM2 = { "samples\snare.dmc",15 }
+
+ABCDE t150
+
+A l8 o4 @01 @v0
+A [c d e f @v1 g4 @v0 a16 b16 >c c d e f @v1 g4 @v0 a16 b16 >c<<]2
+
+C l4 o3 q6
+C [c e g8 g8 a16 b16 >c8 c e g8 g8 a16 b16 >c8<<]4
+
+D l4 o1 @0 @v2
+D [@v2 b @v3 e @v2 b @v3 e @v2 b @v3 e @v2 b @v3 e8 @v2 b8]4
+
+E o0 l4
+E [c d c d c d c d8 c8]4
+
+
+*******************************************************************************
+** ADDITIONAL MACROS **********************************************************
+*******************************************************************************
+
+This section will cover a few useful macros that can be used to add more depth 
+and complexity to your tunes. The syntax for the macros will first be given, 
+followed by the valid range of values that can be used, concluding with 
+examples and explanations. For a comprehensive listing of MML commands, please 
+see the mckc-e.txt file by Virt that is mentioned at the beginning of this 
+document.
+
+
+Volume Macro @v[num] = { }
+-------------------------------------------------------------------------------
+Valid range of values for num: 0 to 127
+Valid range of values for parameters: 0 to 15
+
+@v0 = { 10 8 6 5 4 3 2 | 3 4 5 6 5 4 }
+A @v0 c d e f g a b >c<
+B @v0 c d e f g a b >c<
+D @v0 c d e f g a b >c<
+
+The volume envelope macro has been covered extensively already, useable by both
+the pulse wave channels (A+B) and the noise channel (D). However this example 
+illustrates a loop point within the macro. Notice the | following the 2, this 
+is the loop point. All values after this point will loop indefinitely. So for 
+this example, the channel begins playing at volume 10 down to 8, 6, 5, 4, 3, 
+and 2 and then increases again to 3, 4, 5, peaking at 6, then back down to 
+5, 4, and looping back to 3 stepping through the values again. Loop points in 
+volume macros can be very useful for things such as simulating delay/echo 
+effects.
+
+
+Timbre Macro @[num] = { }
+-------------------------------------------------------------------------------
+Valid range of values for num: 0 to 127
+Valid range of values for parameters: 0 to 3
+
+@0 = { | 2 2 2 2 1 1 1 1 0 0 0 0 1 1 1 1 }
+A @@0 c d e f g a b >c<
+B @@0 c d e f g a b >c<
+
+The timbre macro is useable only on the pulse wave channels (A+B) in order to 
+rapidly switch the duty cycles of the pulse waves. The above example sets a 
+loop point immediately following the opening bracket, meaning all values will 
+be looped. A 50% duty cycle is played for 4 frames, followed by a 25% duty 
+cycle for 4 frames, followed by a 12.5% duty cycle for 4 frames, followed 
+again by a 25% duty cycle for another 4 frames, and finally looping back to 
+the beginning with the 50% duty cycle. Timbre macros can be used to make the 
+pulse wave channels sound much more interesting. Use a looping timbre macro 
+like the one above to thicken your tune up a bit. Or use a non-looping macro to
+simply give instruments a sense of being plucked.
+
+
+Arpeggio/Note Macro @EN[num] = { }
+-------------------------------------------------------------------------------
+Valid range of values for num: 0 to 127
+Valid range of values for parameters: -127 to 126
+
+@EN0 = { 0 0 | 4 0 3 0 -7 0 }
+A EN0 c f g >c< ENOF
+B EN0 c f g >c< ENOF 
+D EN0 c f g >c< ENOF 
+
+The arpeggio (or note) macro is used to step through a series of notes very 
+rapidly, useable on the pulse wave channels (A+B) and the noise channel (D). 
+The most common use of this technique is probably for simulating chords on a 
+single channel. The parameters for the macro are not absolute, but instead 
+relative to the current note. So, going through the above example, first the 
+base note is played for 2 frames indicated by the two 0s, next the loop point 
+is set, following the loop point the note is increased by 4 semitones (so if 
+the base note is c this will now play e), then followed by a 0 to hold this 
+new note for a second frame, then this new note is increased by 3 semitones 
+(bringing it from e to g if we assume c as the base note), followed by a 0 to 
+hold this new note for a second frame, then finally decreased by 7 semitones 
+back to the base note and held for a second frame by the following 0 before 
+jumping back to the loop point. This example is simulating a major chord. The 
+macro is turned on by issuing the EN[num] command on the channel, and turned 
+off using ENOF.
+
+
+Pitch Macro @EP[num] = { }
+-------------------------------------------------------------------------------
+Valid range of values for num: 0 to 127
+Valid range of values for parameters: -127 to 126
+
+@EP0 = { 8 }
+@EP1 = { -64 }
+A EP0 c EPOF r EP1 c EPOF
+B EP0 c EPOF r EP1 c EPOF 
+C EP0 c EPOF r EP1 c EPOF
+D EP0 c EPOF r EP1 c EPOF
+
+The pitch macro, useable on all channels except for the DPCM channel (E), 
+functions by sliding the frequency of a note with a speed and direction based 
+upon the given parameters. When the number(s) within the brackets is positive, 
+the frequency will slide up in pitch. Likewise, when the number(s) within the 
+brackets is negative, the frequency of the note will slide downwards in pitch. 
+The farther the value is from 0 (in either direction) the faster the frequency 
+will sweep. In the above example, two pitch macros are setup, EP0 to give a 
+slow upward pitch bend and EP1 to give a very extreme pitch bend down. In this 
+second instance, the pitch is swept downward so quickly and so far that it 
+wraps around, generating an interesting effect. Both examples use a single 
+value within the brackets, but it is possible to use multiple values and set a 
+loop point as in the above arpeggio macro example. Like the arpeggio/note 
+macro, the pitch macro will remain ON when in use on a channel until it is 
+issued the EPOF command for turning it off.
+
+
+Vibrato Macro @MP[num] = { [delay] [speed] [depth] }
+-------------------------------------------------------------------------------
+Valid range of values for num: 0 to 63
+Valid range of values for delay parameter: 0 to 255
+Valid range of values for speed parameter: 1 to 255
+Valid range of values for depth parameter: 0 to 255
+
+@MP0 = { 8 2 6 }
+A MP0 c1 d1 e1 f1 g1 a1 b1 >c1< MPOF
+B MP0 c1 d1 e1 f1 g1 a1 b1 >c1< MPOF
+C MP0 c1 d1 e1 f1 g1 a1 b1 >c1< MPOF
+D MP0 c1 d1 e1 f1 g1 a1 b1 >c1< MPOF
+
+The vibrato (or pitch modulation) macro is useable on all channels except for 
+the DPCM channel (E). There are 3 parameters that must be set within the 
+brackets: delay, speed, and depth. Pitch modulation works by sliding the 
+frequency of a note in a sine wave pattern. The delay parameter determines how 
+long to wait before activating the vibrato, a value of 0 activating it 
+immediately. The speed parameter determines the period of the sine wave, the 
+larger the value the slower the pitch will change. The final parameter is 
+depth, which determines the amplitude of the sine wave, the larger the value 
+the greater the pitch range. Like the arpeggio/note macro and the pitch macro, 
+the vibrato will remain ON when in use on a channel until it is issued the 
+MPOF command for turning it off.
+
+
+*******************************************************************************
+** TROUBLESHOOTING ************************************************************
+*******************************************************************************
+
+DPCM Sample Problems
+-------------------------------------------------------------------------------
+The DPCM samples can sometimes cause pops in your tunes, little clicks that are
+audible before and/or after the samples play. This cannot always be completely 
+eliminated, but there are some things that you can do to minimize the problem. 
+First off, 16bit 44100KHz Mono .wav files are recommended for use with DMCconv,
+and make sure to check in your sound editor that the samples have a starting 
+and ending level of 0. Once this is verified, convert the samples with DMCconv 
+and open the converted samples in a hex editor. If the size of the file is not 
+a multiple of 16, it should be padded with $AA or $55 until it is.
+
+
+Bank Overflows
+-------------------------------------------------------------------------------
+When working on long tunes or using particularly complex MML, you may encounter
+the following error output from nesasm:
+
+Bank overflow, offset > $1FFF!
+
+Nesasm code must be organized in a way such that it uses 8K banks. If your 
+songdata takes up too much space, you will encounter this bank overflow problem
+at compilation time. Fortunately, there is an MML command for bankswitching 
+that will effectively give you more space for your songdata. Its usage is as 
+follows:
+
+#BANK-CHANGE [num]
+
+Where the valid range of values for num is 1 to 14, each corresponding to a 
+track in your MML code (1=A, 2=B, 3=C, ... ). If the command is not successful 
+in eliminating the bank overflow the first time you use it, try bankswitching 
+different tracks. There is also an alternative usage of this command below:
+
+#BANK-CHANGE [num1],[num2]
+
+Where the valid values for num1 are 0 to 2 which denotes the bank number, and 
+for num2 they are again 1 to 14 corresponding to a track number. If you are 
+using the DPCM channel, num1 should be set to 0 to avoid problems since DPCM 
+samples are stored in banks 1 and 2.
+
+- EOF -------------------------------------------------------------------------
+
+../love_always/nullsleep
+../www.8bitpeoples.com
+../www.nullsleep.com
+
+If you find any errors in this document or have any suggestions or requests for
+additions, please contact me: nullsleep@8bitpeoples.com
+
+Related Links:
+http://www.geocities.co.jp/Playtown-Denei/9628/	; the home of mck
+http://www.vorc.org				; relevant vgm & chiptune news
+http://nesdev.parodius.com			; a wealth of NES docs
+http://research.8bitpeoples.com 		; NES and other 8bit love

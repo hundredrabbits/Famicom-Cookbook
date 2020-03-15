@@ -1,0 +1,306 @@
+Square 2
+
+Last time we produced a beep on the Square 1 channel by making writes to $4000-$4003.  Now we'll learn how to do it with Square 2.  This is very easy because Square 1 and Square 2 are almost identical.  We control the Square 2 channel with ports $4004-$4007, and they more or less mirror Square 1's $4000-4003.
+
+SQ2_ENV ($4004)
+
+76543210
+||||||||
+||||++++- Volume
+|||+----- Saw Envelope Disable (0: use internal counter for volume; 1: use Volume for volume)
+||+------ Length Counter Disable (0: use Length Counter; 1: disable Length Counter)
+++------- Duty Cycle
+
+
+SQ2_SWEEP ($4005)
+Skip this for now.  This port, incidentally, is where Square 2 differs from Square 1.
+
+
+SQ2_LO ($4006)
+
+76543210
+||||||||
+++++++++- Low 8-bits of period
+
+
+SQ2_HI ($4007)
+
+76543210
+||||||||
+|||||+++- High 3-bits of period
++++++---- Length Counter
+
+To produce a sound, first we enable the channel via $4015:
+
+    lda #%00000010 ;enable Square 2
+    sta $4015
+    
+Then we write to the Square 2 ports:
+
+    lda #%00111000 ;Duty Cycle 00, Volume 8 (half volume)
+    sta $4004
+ 
+    lda #$A9   ;$0A9 is an E in NTSC mode
+    sta $4006
+ 
+    lda #$00
+    sta $4007
+    
+Except for sweeps, the Square 2 channel works just like the Square 1 channel.
+    
+Triangle
+
+The Triangle channel produces triangle waveforms which have a smooth sound to them.  Think of the flute-like melody in the Dragon Warrior overland song.  That's the Triangle.
+
+Unlike the Square channels, we have no control over the Triangle channel's volume or tone.  It makes only one type of sound and it's either on (playing) or off (silent).  We manipulate the Triangle channel via ports $4008-$400B.
+
+TRI_CTRL ($4008)
+
+76543210
+||||||||
+|+++++++- Value
++-------- Control Flag (0: use internal counters; 1: disable internal counters)
+
+The triangle channel has two internal counters that can be used to automatically control note duration.  We are going to disable them so that we can control note length manually.  We will set the Control Flag to 1 and forget about it.
+
+When the internal counters are disabled, Value controls whether the channel is on or off.  To silence the channel, set Value to 0.  To turn the channel on (ie, unsilence), set Value to any non-zero value.  Here are some examples:
+
+    lda #%10000000 ;silence the Triangle channel
+    sta $4008
+ 
+    lda #%10000001 ;Triangle channel on
+    sta $4008
+ 
+    lda #%10001111 ;Triangle channel on
+    sta $4008
+ 
+    lda #%11111111 ;Triangle channel on
+    sta $4008
+    
+Note that the last three examples are functionally the same.  Any non-zero value in Value makes the Triangle channel play.
+
+Unused Port
+$4009 is unused
+
+Setting the Note
+$400A and $400B control the period of the wave, or in other words what note you hear (A, C#, G, etc).  Like the Squares, Triangle periods are 11-bits long.  $400A holds the low 8-bits and $400B holds the high 3-bits of the period.  We'll learn more about periods next week, but for now just know that changing the values written to these ports will change the note that is played.
+
+TRI_LO ($400A)
+
+76543210
+||||||||
+++++++++- Low 8-bits of period
+
+TRI_HI ($400B)
+
+76543210
+||||||||
+|||||+++- High 3-bits of period
++++++---- Length Counter
+
+The Length Counter, if enabled, controls how long the note is played.  We disabled it up in the $4008 section, so we can forget about it for now.
+
+Here is some code to play an eternal beep on the Triangle channel:
+
+    lda #%00000100 ;enable Triangle channel
+    sta $4015
+
+    lda #%10000001 ;disable counters, non-zero Value turns channel on
+    sta $4008
+ 
+    lda #$42   ;a period of $042 plays a G# in NTSC mode.
+    sta $400A
+ 
+    lda #$00
+    sta $400B
+    
+Multiple Beeps
+We now know how to use the Square 1, Square 2 and Triangle channels to make sound.  It doesn't take too much extra work to make them all play at the same time.  We just have to enable all three channels via $4015 and then write to the ports.  Here's some code that will play a C#m chord (C# E G#) using the knowledge we have gained up to now:
+
+    lda #%00000111  ;enable Sq1, Sq2 and Tri channels
+    sta $4015
+ 
+    ;Square 1
+    lda #%00111000  ;Duty 00, Volume 8 (half volume)
+    sta $4000
+    lda #$C9        ;$0C9 is a C# in NTSC mode
+    sta $4002       ;low 8 bits of period
+    lda #$00
+    sta $4003       ;high 3 bits of period
+ 
+    ;Square 2
+    lda #%01110110  ;Duty 01, Volume 6
+    sta $4004
+    lda #$A9        ;$0A9 is an E in NTSC mode
+    sta $4006
+    lda #$00
+    sta $4007
+ 
+    ;Triangle
+    lda #%10000001  ;Triangle channel on
+    sta $4008
+    lda #$42        ;$042 is a G# in NTSC mode
+    sta $400A
+    lda #$00
+    sta $400B
+
+
+Last Week: Square 2 and Triangle Basics
+
+This week: We will learn about periods and build a period lookup table that spans 8 octaves.
+
+Periods
+
+In the last two lessons, I've been giving you the values to plug into the 11-bit periods for the Square and Triangle channels.  I haven't been giving you an explanation of what a period is, or where I got those numbers.  So this week we're going to learn about periods.
+
+What is a period?
+A period refers to the length of a wave, or rather the time length of the repeating part of a wave.  Take a look at this square wave (x-axis is time):
+
+Notice how it is repeating.  It starts high and remains high for 2 time units.  Then it goes low and remains low for 2 time units.  Then it repeats.  When we say period, we are talking about the horizontal time length of this repeating wave.  In this case, the period is 4 time units.  The longer a period is, the lower the note will sound.   Conversely, the shorter a period is, the higher the note will sound.  Look at these 3 Square waves:
+
+Period = 6 time units
+
+Period = 4 time units
+
+Period = 1 time unit
+
+The top wave has the longest period (6 time units) and it will sound the lowest.  The bottom wave has a short period (1 time unit) and will sound higher than the other two.
+
+On the NES, we write an 11-bit period to the APU ports.  The smaller the number, the shorter the period, the higher the note.  Larger numbers = longer periods = lower notes.  Look at the following code snippets that write an 11-bit period to the Square 1 ports:
+
+    lda #$C9
+    sta $4002
+    lda #$05
+    sta $4003 ;period $5C9: large number = long period = low note
+ 
+    ;----
+ 
+    lda #$09
+    sta $4002
+    lda #$00
+    sta $4003 ;period $009: small number = short period = very high note
+
+Periods -> Notes
+So how do we know which 11-bit period values correspond to which notes?  The magic forumla is:
+
+    P = C/(F*16) - 1
+    
+    P = Period
+    C = CPU speed (in Hz)
+    F = Frequency of the note (also in Hz).  
+    
+The value of C differs between NTSC and PAL machines, which is why a game made for NTSC will sound funny on a PAL NES, and vice-versa.
+
+To find the period values for notes, we will have to look up note frequencies and plug them into the formula.  Or we can cross our fingers and hope somebody has already done the work for us and put the answers in an easy-to-read table.  Lucky for us a cool fellow named Celius has done just that, for both NTSC and PAL.  Here are the charts:
+
+http://www.freewebs.com/the_bott/NotesTableNTSC.txt
+http://www.freewebs.com/the_bott/NotesTablePAL.txt
+
+Lookup Tables
+It is fairly common practice to store period values in a lookup table.  A lookup table is a table of pre-calculated data stored in ROM.  Like an answer sheet.  Lookup tables are used to cut down on complicated, time-consuming calculations.  Let's look at a trivial example.  Let's say you want a subroutine that takes a value in A and returns 3^A.  If you took the brute-force approach, you might write something like this:
+
+multiplier .rs 1
+
+; takes a value (0-5) in A and returns 3^A
+three_to_the_a:
+    bne .not_zero
+    lda #$01        ;3^0 is 1
+    rts
+.not_zero:
+    tay
+    lda #$03
+.loop:    
+    sta multiplier
+    dey
+    beq .done
+    clc
+    adc multiplier
+    adc multiplier
+    jmp .loop
+.done:
+    rts
+    
+It works, but it's not very pretty.  Here is how we would do it with a lookup table:
+
+;lookup table with pre-calculated answers
+powers_of_3:
+    .byte 1, 3, 9, 27, 81, 243
+ 
+three_to_the_a:
+    tay
+    lda powers_of_3, y
+    rts
+    
+Easier to code.  Easier to read.  And it runs faster too.
+
+NESASM3 Tip#1: Local Labels
+You may have noticed in the above example that I put a period in front of some labels: .done, .loop, .not_zero.  NESASM3 treats these as local labels.  There are two types of labels: global and local.  A global label exists across the whole program and must be unique.  A local label only exists between two global labels.  This means that we can reuse the names of local labels - they only need to be unique within their scope.  Using local labels saves you the trouble of having to create unique names for common case labels (like looping).  I tend to use local labels for all labels that occur within subroutines.  To make a label local, stick a period in front of it.
+    
+Note Lookup Table
+Let's take Celius's tables and turn them into a note lookup table. Period values are 11 bits so we will need to define our lookup table using words.  Note that .word is the same as .dw.  Here is a note_table for NTSC:
+
+;Note: octaves in music traditionally start from C, not A.  
+;      I've adjusted my octave numbers to reflect this.
+note_table:
+    .word                                                                $07F1, $0780, $0713 ; A1-B1 ($00-$02)
+    .word $06AD, $064D, $05F3, $059D, $054D, $0500, $04B8, $0475, $0435, $03F8, $03BF, $0389 ; C2-B2 ($03-$0E)
+    .word $0356, $0326, $02F9, $02CE, $02A6, $027F, $025C, $023A, $021A, $01FB, $01DF, $01C4 ; C3-B3 ($0F-$1A)
+    .word $01AB, $0193, $017C, $0167, $0151, $013F, $012D, $011C, $010C, $00FD, $00EF, $00E2 ; C4-B4 ($1B-$26)
+    .word $00D2, $00C9, $00BD, $00B3, $00A9, $009F, $0096, $008E, $0086, $007E, $0077, $0070 ; C5-B5 ($27-$32)
+    .word $006A, $0064, $005E, $0059, $0054, $004F, $004B, $0046, $0042, $003F, $003B, $0038 ; C6-B6 ($33-$3E)
+    .word $0034, $0031, $002F, $002C, $0029, $0027, $0025, $0023, $0021, $001F, $001D, $001B ; C7-B7 ($3F-$4A)
+    .word $001A, $0018, $0017, $0015, $0014, $0013, $0012, $0011, $0010, $000F, $000E, $000D ; C8-B8 ($4B-$56)
+    .word $000C, $000C, $000B, $000A, $000A, $0009, $0008                                    ; C9-F#9 ($57-$5D)
+
+Once we have a note lookup table, we use the note we want as an index into the table and pull the period values from it, like this:
+    
+    lda #$0C            ;the 13th entry in the table (A2)
+    asl a               ;multiply by 2 because we are indexing into a table of words
+    tay
+    lda note_table, y   ;read the low byte of the period
+    sta $4002           ;write to SQ1_LO
+    lda note_table+1, y ;read the high byte of the period
+    sta $4003           ;write to SQ1_HI
+    
+To make it easier to know which index to use for each note, we can create a list of symbols:
+
+;Note: octaves in music traditionally start at C, not A
+
+;Octave 1
+A1 = $00    ;"1" means octave 1.
+As1 = $01   ;"s" means "sharp"
+Bb1 = $01   ;"b" means "flat".  A# == Bb
+B1 = $02
+
+;Octave 2
+C2 = $03
+Cs2 = $04
+Db2 = $04
+D2 = $05
+;...
+A2 = $0C
+As2 = $0D
+Bb2 = $0D
+B2 = $0E
+
+;Octave 3
+C3 = $0F
+;... etc
+
+Now we can use our new symbols instead of the actual index values:
+
+    lda #A2             ;A2.  #A2 will evaluate to #$0C
+    asl a               ;multiply by 2 because we are indexing into a table of words
+    tay
+    lda note_table, y   ;read the low byte of the period
+    sta $4002           ;write to SQ1_LO
+    lda note_table+1, y ;read the high byte of the period
+    sta $4003           ;write to SQ1_HI
+    
+And if later we want to have a series of notes, symbols are much easier to read and alter:
+
+sound_data:
+    .byte C3, E3, G3, B3, C4, E4, G4, B4, C5 ; Cmaj7 (CEGB)
+ 
+sound_data_no_symbols:
+    .byte $0F, $13, $16, $1A, $1B, $1F, $22, $26, $27 ;same as above, but hard to read. Cmaj7 (CEGB)

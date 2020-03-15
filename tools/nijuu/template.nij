@@ -1,0 +1,81 @@
+;---------------------------------------------------------------
+; Nijuu Project File
+;---------------------------------------------------------------
+	
+SONG_NAME	EQU "Nijuu Template"
+SONG_FILE_NAME	EQU "template.sng"
+COMPOSER_NAME	EQU "Neil Baldwin"
+COPYRIGHT_NAME	EQU "Neil Baldwin"
+
+;---------------------------------------------------------------
+; iNES header
+;---------------------------------------------------------------
+	IFDEF NES
+
+	.byte "NES",$1a 	; iNES identifier
+	.byte $02		; Number of PRG-ROM blocks
+	.byte $00		; Number of CHR-ROM blocks
+	.byte $00, $00		; ROM control bytes: Horizontal mirroring
+			;   no SRAM, or trainer, Mapper #0
+	.byte $00,$00,$00,$00,$00,$00,$00,$00	; Filler
+
+	org $8000		;Nijuu Engine
+	.include "source/nijuu.h"
+	.incbin "source/nijuu.bin"
+	.include "source/nijuu_init.asm"
+		
+	;Music data
+	.include SONG_FILE_NAME
+
+	; PRG-ROM
+	.include "source/reset.asm"
+
+;---------------------------------------------------------------
+;NSF File output
+;---------------------------------------------------------------
+	ELSE
+	
+	org $0000
+	IFNDEF RAW
+	.byte "NESM",$1a	;NSF Header
+	.db $01		;NSF Version Number
+	.db $01		;NSF Total Songs
+	.db $01		;NSF Starting Song Number
+	.dw $8000		;NSF Load address of data
+	.dw $8003		;NSF init address
+	.dw $8000		;NSF Play address
+
+	FILLVALUE 0
+	a=$
+	.byte SONG_NAME,0	;NSF Name
+	b=32-($-a)
+	.dsb b
+	
+	a=$
+	.byte COMPOSER_NAME,0	;NSF Composer
+	b=32-($-a)
+	.dsb b
+
+	a=$
+	.byte COPYRIGHT_NAME,0	;NSF Copyright
+	b=32-($-a)
+	.dsb b
+	
+	.dw 0		;NSF NTSC Speed
+	.db $00,$00,$00,$00,$00,$00,$00,$00	;NSF Bankswitch Values
+	.dw 0		;NSF PAL Speed
+	.db %00000000		;NSF PAL/NTSC
+	.db %00000000		;NSF Extra Sound Chip Support
+	.db $00,$00,$00,$00	;NSF Expansion
+	
+	;Nijuu Engine
+	ENDIF
+	
+	BASE $8000
+	.include "source/nijuu.h"
+	.incbin "source/nijuu.bin"
+	.include "source/nijuu_init.asm"
+
+	;Music data
+	.include SONG_FILE_NAME
+	ENDIF

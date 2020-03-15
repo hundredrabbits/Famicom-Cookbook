@@ -17,6 +17,10 @@ sudo apt-get install -y fceux
 
 To inspect the zeropage values, we've created [debug-zeropage.lua](https://github.com/hundredrabbits/Famicom-Cookbook/blob/master/tools/debug-zeropage.lua).
 
+## NMI
+
+Keep in mind that the NMI ( non-maskable interrupt ) is literally just a pin on the 6502 that when triggered ( first completes the current instruction and then ) branches to whatever 16-bit address is stored in $FFFA. On the NES this pin is driven by the PPU to indicate whenever the vertical blanking period has started. The ATARI 2600 uses a 6507 by the way ( instead of a 6502 ) which doesn't have a NMI pin. All of the TIA ( that's the ATARI 2600 "GPU" ) interfacing happens through a bunch of addresses mapped to the zero-page. 
+
 ## Links
 
 ### NES C Tutorials

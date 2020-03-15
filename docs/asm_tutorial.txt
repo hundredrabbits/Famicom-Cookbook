@@ -1512,13 +1512,9 @@ Also, be sure to read through the sound doc for all the complete tech info.
 
 Day 16 - Bit Masking/Toggling
 
-
-
 Masking 
 
-  Before we begin, there's something very important to remember: You can only do math and bit operations on the A register. There are no math and bit operation instructions for the X and Y registers.
-
-  Masking, as in clearing certain bits while leaving the others intact. This is done (atleast alot of the time) with the AND instruction. The syntax is like this:
+Before we begin, there's something very important to remember: You can only do math and bit operations on the A register. There are no math and bit operation instructions for the X and Y registers. Masking, as in clearing certain bits while leaving the others intact. This is done (atleast alot of the time) with the AND instruction. The syntax is like this:
 
   and (number or memory)
 
@@ -1532,12 +1528,10 @@ Remember ANDing a bit with 1 will give the same value that you started with, and
   -----------------------------
   Start  | ANDed with | Result
   -----------------------------
-          0    |     1      |   0
+    0    |     1      |   0
     0    |     0      |   0
     1    |     0      |   0
     1    |     1      |   1
-
-
 
 It's OK if you already knew that, the tables today are for the people who are
 going to have to figure out all this bit logic stuff (ANDs, ORs, XORs, NOTs) on their own because they haven't used ASM before encountering the NES.
@@ -1580,12 +1574,10 @@ Note the underlined '0's, the corresponding bits in A will be '0's, but everythi
   -----------------------------
   Start  | ORed with | Result
   -----------------------------
-          0    |     1      |   1
+    0    |     1      |   1
     0    |     0      |   0
     1    |     0      |   1
     1    |     1      |   1
-
-
 
 You should see that AND's result is 1 if BOTH inputs are 1. OR's result is 1, if one or both inputs are 1.
 
@@ -1607,7 +1599,7 @@ Toggling
   -----------------------------
   Start  | XORed with | Result
   -----------------------------
-          0    |     1      |   1
+    0    |     1      |   1
     0    |     0      |   0
     1    |     0      |   1
     1    |     1      |   0

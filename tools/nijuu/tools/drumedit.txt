@@ -1,0 +1,45 @@
+For Voice A and Voice B, the values are;
+
+[Note Number] [Amplitude] [Duty]
+
+For Voice C you can only set one value;
+
+[Note Number]
+
+For Voice D, the values are;
+
+[Pitch Setting] [Amplitude]
+
+The values are raw values that are written to the APU registers and there is no error checking. So, for example, Amplitude is 0 to 15 (00 to 0F) and you must set the Duty to a valid value (00, 40, 80 or C0).
+
+Where you don't want a voice to sound on a particular frame (row), set the first value to "FF".
+
+----------------------
+
+To play the drum sounds, press A or B on pad 1. This also switches between the drum tables so your editing is done on the drum you last played. Try it, you'll see the "cursor" switch between the two tables.
+
+To move around the tables, use U/D/L/R on pad 1.
+
+To increment/decrement a value, press U/D on pad 2.
+
+To add/subtract 16 ($10) from a value, press L/R on pad 2.
+
+To load drums from SRAM, press SELECT on pad 2.
+
+To save drums to SRAM, press START on pad 2.
+
+To copy a value, hold SELECT on pad 1 and press Up on pad 1.
+
+To paste a value, hold SELECT on pad 1 and press Down on pad 1.
+
+To copy a row, hold START on pad 1 and press Up on pad 1.
+
+To paste a row, hold START on pad 1 and press Down on pad 1.
+
+To increment/decrement all values in a column, hold SELECT on pad 1 on and press Up/Down on pad 2.
+
+To increment/decrement all values in a row, hold START on pad 1 and press Left/Right on pad 2.
+
+To clear a column, hold B on pad 2 and press either Up or Down or pad 2.
+
+To clear a row, hold B on pad 2 and press either Left or Right on pad 2.

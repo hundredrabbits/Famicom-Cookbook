@@ -1,0 +1,1132 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+<title>Nijuu Manual</title>
+<style type="text/css">
+<!--
+body {
+	font-family: Arial, Helvetica, sans-serif;
+	background-color: #CCCCCC;
+}
+.InstrumentCommand {
+	background-color: #999999;
+	border: 1px solid #000000;
+	margin-bottom: 10px;
+	margin-right: 20px;
+	margin-left: 20px;
+	margin-top: 0px;
+	padding-top: 0px;
+	padding-right: 10px;
+	padding-bottom: 0px;
+	padding-left: 10px;
+}
+.dark_grey_box {
+	background-color: #999999;
+	border: 1px dotted #333333;
+	padding: 10px;
+	margin: 20px;
+}
+h3 {
+	font-size: 14px;
+}
+a {
+	color: #000000;
+}
+.example_box {
+	border-top-style: dashed;
+	border-right-style: dashed;
+	border-bottom-style: dashed;
+	border-left-style: dashed;
+	background-color: #CCCCCC;
+	margin: 10px;
+	border-top-width: 1px;
+	border-right-width: 1px;
+	border-bottom-width: 1px;
+	border-left-width: 1px;
+	padding-top: 0px;
+	padding-right: 10px;
+	padding-bottom: 0px;
+	padding-left: 10px;
+}
+h2 {
+	font-size: 16px;
+}
+h1 {
+	font-size: 18px;
+}
+.sectionBreak {
+	margin: 0px;
+	padding: 0px;
+	height: 2px;
+	width: 100%;
+	border: 1px solid #000000;
+	background-color: #666666;
+}
+li {
+	font-size: 13px;
+	list-style-type: decimal;
+}
+.example_box p {
+	font-size: 13px;
+}
+pre {
+	margin: 0px;
+	padding: 0px;
+	font-size: 13px;
+	font-family: "Courier New", Courier, monospace;
+}
+p {
+	font-size: 13px;
+}
+.diagramBox {
+	padding: 0px;
+	margin-top: 10px;
+	margin-right: auto;
+	margin-bottom: 10px;
+	margin-left: auto;
+	width: 640px;
+}
+.container {
+	margin-right: auto;
+	margin-left: auto;
+	min-width:700px;
+}
+li li {
+	font-size: 12px;
+	list-style-type: none;
+}
+li li li {
+	font-size: 12px;
+}
+.EditBookmark {
+	background-color: #FF0000;
+}
+-->
+</style>
+</head>
+
+<body>
+
+<div class="container">
+<h1>Nijuu Documentation</h1>
+<h2>Preface</h2>
+<p>Nijuu is a new NES music engine that is very loosely based on the audio engine that I used in my commercial projects but has been expanded, improved and fattened up to make it more exciting and easy to squeeze nice sound out of the NES.</p>
+<p>One thing to bear in mind from the outset: Nijuu has not been written in a way that makes it friendly to use in any other environment other than to make stand-alone NSF music files. It uses a LOT of CPU time and a LOT of RAM and is (currently, perhaps always) horribly under-optimised. My approach has been to make a musician-friendly engine, rather than bleeding-edge code. That's not to say you couldn't use Nijuu in a game/demo etc. but I'm just warning you that Nijuu doesn't care about anything but itself. There's statistics and figures further into the documentation that will prove this beyond doubt. There are some obvious areas for improvement, especially with the RAM usage but until I've stopped adding features and generally improving how Nijuu is to use, I won't be optimising anything.</p>
+<p>Oh, one other thing. Nijuu has got no fancy GUI front end. It's written in assembly language and that's the way you have to compose and edit your music - in a text editor and compiled with ASM6. There are, however, plenty of friendly abstractions (explicit labeling and macro commands) to make things more readable/understandable but if you're not comfortable with the odd DB or DW command and you don't understand the concepts of tables, indexing and addressing (in releation to assembly programming), Nijuu is perhaps not for you.</p>
+<p>I promise you though, the learning curve will reward you with ace NES sound. With a little practice.</p>
+<h3>Assumptions</h3>
+<p>This document assumes you know what a NES is, what the APU is and you know how many hardware voices it has, the registers that control them and what those voices are capable of. If you don’t there’s plenty of reference on the internet.</p>
+<h3>Bugs</h3>
+<p>I've done a lot of testing but I'm sure there are going to be bugs that crop up. In fact, I already know of a couple. Nijuu is very flexible and fairly complex so with the right (wrong) combination of commands and numbers it's definitely breakable. If you think you've discovered a bug, email me.
+<h3>Changes
+</h3>
+<p>I've tried to get Nijuu to a releasable state where the core features have stopped being in flux. There are a few features that I'm still not totally happy with (plus more may be added). I will endeavor to make subsequent releases as backwards-compatible as I can but it might not always be possible. In those cases I will try to explain how to fix your songs to make them compatible with the latest version.
+<p>Not put you off? Cool, read on.</p>
+<h3>Usage, Warranties Etc.</h3>
+<p>All code and documentation &copy; Neil Baldwin 2009.</p>
+<p>Having said that, you're free to use Nijuu in any way you like, just be cool about it. Don't try to sell it and acknowledge me if you're using it in a commercial product etc. Or send me a nice email. I like those. If you find any bugs or errors in the manual, if you have any suggestions or make changes yourself that you think are cool, or you've made some great music with Nijuu, email me:</p>
+<p><a href="mailto:neil@dutycyclegenerator.com">neil@dutycyclegenerator.com</a></p>
+<p>As such, I offer you no warranties apart from making you the envy of your friends.</p>
+<p>Have fun!</p>
+<p></p>
+<div class="sectionBreak"></div>
+<h2>Index</h2>
+<ul>
+  <li><a href="#NijuuArchitecture" target="_self">Nijuu Architecture</a>
+    <ul>
+      <li><a href="#NijuuArchitectureLimitations" target="_self">Limitations</a></li>
+    </ul>
+  </li>
+  <li><a href="#HowToCompileNijuuSong" target="_self">How To Compile A Nijuu Song </a>
+    <ul>
+      <li><a href="#HowToCompileSongOutput" target="_self">Output</a></li>
+        <li><a href="#HowToCompileSongProjectFiles" target="_self">Project Files</a></li>
+        <li><a href="#AssemblyLanguagePrimer" target="_self">Assembly Language Primer For Nijuu</a></li>
+      </ul>
+  </li>
+  <li><a href="#InstrumentExplanation" target="_self">Instrument Explanation </a>
+    <ul>
+      <li><a href="#ConstructingAnInstrument" target="_self">Constructing An Instrument</a></li>
+      </ul>
+  </li>
+  <li><a href="#InstrumentCommands" target="_self">Instrument Commands </a>
+    <ul>
+      <li><a href="#ENV" target="_self">ENV - Envelope</a></li>
+        <li><a href="#DCM" target="_self">DCM - Duty Cycle Modulation</a></li>
+        <li><a href="#PLK" target="_self">PLK - Pluck sound</a></li>
+        <li><a href="#ARP" target="_self">ARP - Arpeggio</a></li>
+        <li><a href="#VIB" target="_self">VIB - Vibrato</a></li>
+      </ul>
+  </li>
+  <li><a href="#Sequences" target="_self">Sequences </a>
+    <ul>
+      <li><a href="#EnteringMusicABC" target="_self">Entering Musical Data for Voices A, B & C</a></li>
+        <li><a href="#EnteringMusicD" target="_self">Entering Musical Data for Voice D</a></li>
+        <li><a href="#NoteLengths" target="_self">Note Lengths</a></li>
+        <li><a href="#SequencePlaybackNotes" target="_self">Sequence Playback Behaviour - Notes</a></li>
+      </ul>
+  </li>
+  <li><a href="#SequenceCommands" target="_self">Sequence Commands</a>
+    <ul>
+      <li><a href="#SequencePlaybackCommands" target="_self">Sequence Playback Behaviour - Commands</a></li>
+        <li><a href="#BasicCommands" target="_self">Basic Commands </a>
+          <ul>
+            <li><a href="#ES" target="_self">ES - End of Sequence</a></li>
+            <li><a href="#V" target="_self">V - Velocity</a></li>
+            <li><a href="#D" target="_self">D - Duration (notes)</a></li>
+            <li><a href="#RnRD" target="_self">R & RD - Entering a rest/period</a></li>
+            <li><a href="#I" target="_self">I - Select an Instrument</a></li>
+          </ul>
+        </li>
+        <li><a href="#AdvancedCommands" target="_self">Advanced Commands </a>
+          <ul>
+            <li><a href="#SRnER" target="_self">SR & ER - Start Repeat & End Repeat, defining a looping section</a></li>
+            <li><a href="#LG" target="_self">LG - Legato Mode</a></li>
+            <li><a href="#RL" target="_self">RL - Release Mode (forcing ADSR envelope into Release Phase)</a></li>
+            <li><a href="#SInMI" target="_self">SI & MI - Set Instrument parameter & Modify Instrument parameter</a></li>
+            <li><a href="#PnPLG" target="_self">P & PLG - Portamento & Portamento-Legto</a></li>
+            <li><a href="#Bend" target="_self">B - Pitch bend</a></li>
+            <li><a href="#SWEEP" target="_self">SW - Pitch Sweep</a></li>
+            <li><a href="#HOLD" target="_self">HOLD - Hold voice, prevent Drum Track from interrupting</a></li>
+          </ul>
+        </li>
+      </ul>
+  </li>
+  <li><a href="#AudioEffects" target="_self">Audio Effects - Sequence or Track Commands for adding effects </a>
+    <ul>
+      <li><a href="#DT" target="_self">DT - Detune Effect</a></li>
+        <li><a href="#ECHO" target="_self">ECHO - Single-voice Echo Effect</a></li>
+        <li><a href="#GT" target="_self">GT - Gated Amplitude Effect</a></li>
+      </ul>
+  </li>
+  <li><a href="#TheDrumTrack" target="_self">The Drum Track </a>
+    <ul>
+      <li><a href="#DrumSoundMacroCommands" target="_self">Drum Sound Macro Commands - Building A Drum Sound </a>
+        <ul>
+          <li><a href="#DRUMA" target="_self">DRUM_A - set pitch/amplitude/duty for Voice A</a></li>
+            <li><a href="#DRUMB" target="_self">DRUM_B - set pitch/amplitude/duty for Voice B</a></li>
+            <li><a href="#DRUMC" target="_self">DRUM_C - set pitch for Voice C</a></li>
+            <li><a href="#DRUMD" target="_self">DRUM_D - set pitch/amplitude for Voice D</a></li>
+            <li><a href="#DFE" target="_self">DFE - define Drum Frame End</a></li>
+            <li><a href="#DE" target="_self">DE - mark end of Drum Sound</a></li>
+          </ul>
+        </li>
+        <li><a href="#CreatingDrumSequence" target="_self">Creating A Sequence For Drum Track</a></li>
+        <li><a href="#DrumSequenceNoteDuration" target="_self">Drum Sequence "Note" Duration</a></li>
+        <li><a href="#DrumSequenceRest" target="_self">Drum Sequence "Rest"</a></li>
+        <li><a href="#DrumSequenceCommands" target="_self">Drum Sequence Commands </a>
+          <ul>
+            <li><a href="#DrumTrackTranspose" target="_self">Drum Track & The Transpose Command</a></li>
+          </ul>
+        </li>
+        <li><a href="#MoreOnDrums" target="_self">More On Drums</a></li>
+      </ul>
+  </li>
+  <li><a href="#Tracks" target="_self">Tracks </a>
+    <ul>
+      <li><a href="#ArrangingSequenceIntoTracks" target="_self">Arranging Your Sequences Into Tracks</a></li>
+        <li><a href="#TrackCommands" target="_self">Track Commands </a>
+          <ul>
+            <li><a href="#TV" target="_self">TV - Set Track Volume </a>
+              <ul>
+                <li><a href="#AmplitudePathScale" target="_self">Amplitude Path & Scaling</a></li>
+              </ul>
+            </li>
+            <li><a href="#TR" target="_self">TR - Set Transpose for Track</a></li>
+            <li><a href="#ST" target="_self">ST - Stop Track</a></li>
+            <li><a href="#LP" target="_self">LP - Loop Track back to specified point</a></li>
+            <li><a href="#FADE_OUT" target="_self">FADE_OUT - initiate Master Volume fade-out (and stop)</a></li>
+            <li><a href="#TrackSequenceCommands" target="_self">Track Commands Shared With Sequences</a></li>
+          </ul>
+        </li>
+      </ul>
+  </li>
+  <li><a href="#UsingNijuuInOwnCode" target="_self">Using Nijuu Songs In Your Own Code</a></li>
+  <li><a href="#History" target="_self">History</a></li>
+  <li><a href="#PlannedUpdates" target="_self">Planned Updates</a></li>
+  <li><a href="#KnownIssues" target="_self">Known Issues</a></li>
+  <li><a href="#APPENDIX" target="_self">Appendix</a>
+    <ul><li><a href="#MIDI2NIJ" target="_self">MIDI2NIJ</a></li>
+    </ul>
+  </li>
+</ul>
+<div class="sectionBreak"></div>
+<h2><a name="NijuuArchitecture" id="NijuuArchitecture"></a>Nijuu Architecture</h2>
+<p>In Nijuu you use “<a href="#Tracks" target="_self">Tracks</a>” and “<a href="#Sequences" target="_self">Sequences</a>” to define your song(s). “Sequences” are patterns that you create containing notes and commands. “Tracks” are used to arrange those patterns (there are also track-based commands but we'll cover that later). Quite similar, in a way, to tracker-type programs only with the flexibility of MML, as your sequences (and tracks) are not based on a grid system and can be of arbitrary length.</p>
+<p>For sound generation, Nijuu uses &quot;Instruments&quot;. “Instruments” are a user-defined set of commands that are in an expected fixed order and have a fixed number of parameters.</p>
+<p>To make Nijuu make sound you;</p>
+<ol>
+  <li>Define an <a href="#InstrumentExplanation" target="_self">instrument</a></li>
+  <li>Define a <a href="#Sequences" target="_self">sequence</a> using that instrument</li>
+  <li>Put the sequence into a <a href="#Tracks" target="_self">track</a></li>
+  <li><a href="#HowToCompileNijuuSong" target="_self">Compile your song</a></li>
+</ol>
+<p>Nijuu songs have, and always expect, 5 tracks. The tracks are in a fixed order too;</p>
+<ul>
+  <li>Track 1 = Voice A</li>
+  <li>Track 2 = Voice B</li>
+  <li>Track 3 = Voice C</li>
+  <li>Track 4 = Voice D</li>
+  <li>Track 5 = <a href="#TheDrumTrack" target="_self">Synthesized Drums</a></li>
+</ul>
+<p>Currently there is no support for the DPCM voice or samples of any kind. This may change in future updates. I’m still trying to decide.</p>
+<h3><a name="NijuuArchitectureLimitations" id="NijuuArchitectureLimitations"></a>Limitations</h3>
+<p>Nijuu has a few limitations you need to bear in mind.</p>
+<ul>
+  <li>Number of Tracks is limited to 255. However, because there is a fixed number per song (5), this equates to 50 songs per project file.</li>
+  <li>Number of Sequences is limited to 127 per project file.</li>
+  <li>Number of Instruments is limited to 127 per project file.</li>
+  <li>Tracks are each limited to 255 bytes long.</li>
+  <li>Sequences are each limited to 255 bytes long.</li>
+  </ul>
+<p>The number of tracks and sequences is easy to manage. However, the data length of tracks and sequences is not so simple. This is because the macro commands use differing numbers of bytes to represent the related parameters/data. Unfortunately, there's no obvious way to determine the data lengths apart from using a &quot;list file&quot; generated by ASM6 (see &quot;How To Compile a Nijuu Song&quot;). As a consequence, there's no error if you define a sequence or a track that exceeds the data length limitation. You'll just end up with unpredictable results, most likely you'll find your track/sequence will be truncated and loop back to the beginning unexpectedly.</p>
+<div class="sectionBreak"></div>
+<h2><a name="HowToCompileNijuuSong" id="HowToCompileNijuuSong"></a>How To Compile a Nijuu Song</h2>
+<p>What you’ll need:</p>
+<ul>
+  <li>A plain-text editor</li>
+  <li>ASM6 - a 6502 assembler written by “loopy”.</li>
+  <li>A NES emulator or NSF player.</li>
+</ul>
+<p>As I mentioned earlier, I use ASM6 to write the code and so ASM6 is what you will need to use to compile a Nijuu song. I will include the latest version of ASM6 executable for Mac OSX (compiled by me) plus the source code and Windows executable as distributed by ASM6's author. ASM6 is a command-line assembler so you need to edit/create the required files in your plain-text editor of choice, save all the files and invoke ASM6 in your UNIX/BSD/BASH shell (or the Windows equivalent). For text editing, I personally use Smultron.</p>
+<p>Though I really love ASM6, if you make a mistake in your Nijuu files (and you definitely WILL),the error reporting can be a little baffling. I suspect this is because of Nijuu’s heavy use of macros. I can only apologise for this - there's not much I can really do about it since the actual assembly part of the output is out of my control. There's not much in the way of error checking/trapping in the Nijuu code so if and when you do get an error, you're going to have to methodically check back through your work, refer to the documentation and check everything you have typed. Having a text editor with line numbers is invaluable and the first place you should look is for errors on line numbers that you've recently edited. If you get stuck I'll try to help you though - just email me.</p>
+<h3><a name="HowToCompileSongOutput" id="HowToCompileSongOutput"></a>Output</h3>
+<p>You can build three types of files from Nijuu - a .NES file that is playable in a NES emulator or a .NSF file or a raw binary file that just contains Nijuu and the data for your song (so you can include it in your own code etc.) To select which is output you use a command-line parameter for ASM6. By default a .NSF file will be built but if you specify &quot;-dNES&quot; as an option when invoking ASM6, a .NES file will be output instead. If you specify &quot;-dRAW&quot;, a raw file will be output. For those that are interested, this feature is not a feature of ASM6 but is setup in your project file. You don’t really need to worry about it though. By default, if you don’t specify an output name, the resulting file output by ASM6 is a .BIN file which you can simply rename to .NES or .NSF for a ROM or NSF, respectively.</p>
+<p>Look at the &quot;readme.txt&quot; file for instructions on how to get started and compile a song.</p>
+<h3><a name="HowToCompileSongProjectFiles" id="HowToCompileSongProjectFiles"></a>Project Files</h3>
+<p>There are 5 files required for a Nijuu project (6 if compiling a NES file). For full explanation of these files, see (&quot;Project Template&quot; section). You only need concern yourself with the first two as the other files don't need editing. I'm just mentioning them here so you're aware of what files are expected when compiling a project.</p>
+  <pre><strong>&quot;&lt;project name&gt;.nij</strong>&quot;</pre>
+<p>This is essentially your project file, the file that collects together all the other files. It follows a strict format so it’s best to copy the contents of the template song (template.asm) and edit that rather than starting from scratch. You can name it however you like. The .nij extension isn’t necessary but I just use it to distinguish Nijuu project files from assembly language files. This is the file that you compile with ASM6 and is also the place you can set Composer Name and other NSF fields. &lt;name&gt;.bin will be what is output by ASM6.</p>
+  <pre><strong>&quot;&lt;song name&gt;.sng</strong>&quot;</pre>
+  <blockquote>
+    <p>This is your song(s) data. Like the project file .nij extension, you don’t need the .sng extension, I just use it to distinguish a Nijuu song file from other files.</p>
+  </blockquote>
+<pre><strong>&quot;source/nijuu.bin&quot;</strong></pre>
+<blockquote>
+  <p>The Nijuu engine binary file. You do not need to edit/change/touch this file.</p>
+</blockquote>
+<pre><strong>&quot;source/nijuu.h&quot;</strong></pre>
+<blockquote>
+  <p>The header file that contains Nijuu’s macro commands etc. You don't need to edit/change/touch this file.</p>
+</blockquote>
+<pre><strong>&quot;source/nijuu_init.asm&quot; </strong></pre>
+<blockquote>
+  <p>The code file that initialises several pointers that are required by Nijuu. You don't need to edit/change/touch this file.</p>
+</blockquote>
+<pre><strong>(optional) &quot;source/reset.asm</strong>&quot;</pre>
+<blockquote>
+  <p>Optional file which contains reset code etc. if you are outputting a NES file. If you are compiling to a NSF file you don't need this file. In any case you don't need to edit/change/touch this file.</p>
+</blockquote>
+<p>So in essence, all you need to edit is the &lt;name&gt;.nij file to initially setup your song, then all your editing is done in the &lt;song name&gt;.sng file. Simple enough? OK, carry on.</p>
+  <div class="dark_grey_box">
+    <h2><a name="AssemblyLanguagePrimer" id="AssemblyLanguagePrimer"></a>Assembly Language Primer for Nijuu!</h2>
+    <p>First off - don't panic, you don't need to know 6502 code or even programming at all, really.</p>
+    <p>However, there are a couple of assembler commands that you'll need to know if you want to use Nijuu. These commands are &quot;db&quot; and &quot;dw&quot; (or &quot;.db&quot; and &quot;.dw&quot; depending on your preference).</p>
+    <p><strong>&quot;db&quot;</strong> is used to define a byte. A byte is an 8-bit number and is the smallest unit of data used when editing music in Nijuu. It has a range of 0 to 255 or -128 to 127 when using signed numbers. It's used for entering single numbers  such as notes (in Sequences) or Sequence numbers (in Tracks). You can use either numbers;</p>
+    <pre>			db 0
+			db -10</pre>
+    <p>or in the case of entering notes into a sequence, there are pre-defined note names;</p>
+    <pre>			db C4</pre>
+    <p><strong>&quot;dw&quot;</strong> is used to define a &quot;word&quot;. A word is a 16-bit number and it's use in a Nijuu music file is when defining tables of addresses/pointers such as Instrument tables etc. Range is irrelevant as you only use &quot;dw&quot; in Nijuu to tell Nijuu where in the ROM/NSF to find various bits of data so you'd only used it like;</p>
+    <pre>			dw TRACK01</pre> 
+    <p>Nijuu songs files make use of the concept of address tables. These are simply a way of telling Nijuu where to find certain data. So;</p>
+    <pre>SOME_DATA		(bunch of numbers etc.)
+
+    </pre>
+    <pre>SOME_MORE_DATA		(more numbers)
+
+    </pre>
+    <pre>DATA_TABLE		DW SOME_DATA
+			DW SOME_MORE_DATA</pre>
+    <p>defines an address table, &quot;DATA_TABLE&quot; and adds an entry at position 0 that points to &quot;SOME_DATA&quot; and an entry at position 1 that points to “SOME_MORE_DATA”.</p>
+    <p>You can put comments in your song file that are ignored when you compile the song. Comments are preceded by a semi-colon &quot;;&quot; and continue until the end of the current line of text.</p>
+    <pre>;This is a comment</pre>
+    <p>You should also familiarise yourself with the usage instructions for ASM6 as there are restrictions on legal/illegal characters (for your instrument/sequence/track labels etc.) and some characters have special functions such as: ! ^ &lt; &gt;</p>
+    <p>All this will probably make more sense once we work through the template file. If not, do a Google search for &quot;6502 assembly language&quot; and educate yourself :)</p>
+  </div>
+  <div class="sectionBreak"></div>
+<h2><a name="InstrumentExplanation" id="InstrumentExplanation"></a>Instrument Explanation</h2>
+<p>As explained in the Nijuu Architecture section, Instruments are what forms the basis of Nijuu's sound generation. These &quot;instruments&quot; are made from a short list of macro commands that all must be present, all must be in the correct order and all must have the required number of parameters. Failure to observe these rules will yield unpredictable results.</p>
+<p>Within your Nijuu song file, you must also maintain a table of pointers that tell Nijuu where to find the Instrument data when you assign them to a Sequence. If you look at the template song, you'll see the following at the start of the file.</p>
+
+<pre>INSTRUMENT_TABLE	DW INSTRUMENT0</pre>
+<pre>
+
+INSTRUMENT0 		etc</pre>
+<p>&quot;INSTRUMENT_TABLE&quot; is what defines the list of Instruments. Do not change the label &quot;INSTRUMENT_TABLE&quot; or it will cause a compilation error.  To add more Instruments, add another DW command followed by the label.</p>
+<pre>INSTRUMENT_TABLE	DW INSTRUMENT0
+			DW INSTRUMENT1</pre>
+<p>or</p>
+<pre>INSTRUMENT_TABLE	DW INSTRUMENT0, INSTRUMENT1
+			etc.</pre>
+<p>You don't have to use the format &quot;INSTRUMENT0&quot; etc. for your instrument names. You can give them real names like &quot;SQUARE_LEAD_01&quot;, or anything really, within the rules of what is allowed in ASM6 e.g.</p>
+<p>
+<pre>INSTRUMENT_TABLE	DW BLANK 						
+			DW SQUARE_LEAD_01</pre>
+</p>
+<p>Just remember, the order you put them in the INTSTRUMENT_TABLE defines the number (starting at 0) that you use to select that instrument in a sequence. In the last example BLANK = 0, SQUARE_LEAD_01 = 1 and so on. This will make more sense once we get onto <a href="#SequenceCommands" target="_self">Sequence Commands</a> and the <a href="#I" target="_self">command to select an Instrument.</a></p>
+<p>Tip: You don't *have* to but I strongly recommend leaving the first instrument (INSTRUMENT0 in the template file) as is i.e. blank. This is then quite handy for defining an empty sequence containing just a &quot;rest&quot; command (later) in order to have silent sections in your song.</p>
+<h3><a name="ConstructingAnInstrument" id="ConstructingAnInstrument"></a>Constructing An Instrument</h3>
+<p>Again, at the top of the template file you'll find;</p>
+<pre>INSTRUMENT_TABLE	DW INSTRUMENT0
+<br />INSTRUMENT0		ENV 0,0,0,0,0,0
+			DCM OFF,0,0,0
+			PLK OFF,0,0,0,0
+			ARP OFF,0,0,0,0,0,0,0
+			VIB 0,0,0,0</pre>
+<p>The five, three-letter abbreviations, ENV, DCM, PLK, ARP and VIB are pre-defined macro commands that, placed together in this way, construct an instrument. They must appear in exactly this order. The numbers (sometimes words) that follow them  are the parameters associated with each macro command. Like the order of the macros, the order and number of parameters is fixed and expected by Nijuu. INSTRUMENT0 in the template file (i.e. the one quoted above) is essentially a &quot;blank&quot; sound.</p>
+<div class="dark_grey_box">
+  <p><strong>A quick explanation of the rationale behind the design of Instruments</strong></p>
+  <p>On the face of it it might seem wasteful to have these fixed length templates when parameters that aren't being used must still be defined and the method is at odds with the way sounds are built in, say, MML. However, when an Instrument is selected in a Sequence, the block of parameters are actually copied to an area of RAM and there are Sequence Commands to modify the parameters of an Instrument on-the-fly. If you had to define an Instrument in a Sequence in the way that MML does, you could waste 25 (current size of an Instrument) bytes of each of your sequences which, as I've explained, are limited to 255 bytes. With this template system you could define the Instrument once and, say, use it in as many Sequences as you like without having to define it again. Also, because Instruments are decoupled from the sequence/track data, it only takes one simple command to change your sound completely within your musical data instead of having to restate all the parameters each time.</p>
+</div>
+<p>So what do these commands mean and what do they do? Read on!</p>
+<div class="sectionBreak"></div>
+<h2><a name="InstrumentCommands" id="InstrumentCommands"></a>Instrument Commands</h2>
+<p>I'll say it again because it's important - you MUST construct your Instruments exactly the same way as the template instrument with all five macro commands in the same order and the exact number of parameters after each command, as in the template. Another quick note - you only define Instruments to use on the first four tracks (for Voice A, B, C &amp; D). The <a href="#TheDrumTrack" target="_self">Drum Track</a> uses it's own particular method of sound synthesis that will be explained later.</p>
+<div class="InstrumentCommand">
+  <h3><a name="ENV" id="ENV"></a>ENV (Envelope)</h3>
+  <pre>			<strong>ENV 0,0,0,0,0,0</strong>
+			DCM OFF,0,0,0
+			PLK OFF,0,0,0,0
+			ARP OFF,0,0,0,0,0,0,0
+			VIB 0,0,0,0
+  </pre>
+  <p>Scope : Voices A, B, C &amp; D</p>
+  <p>This defines a software ADSR-style envelope for the instrument. If you know anything about the APU registers (and I'd seriously hope you do!) then you'll know that only voice A, B &amp; D have an amplitude setting. This is correct, however the ENV setting does have a special use in Nijuu when defining an Instrument for Voice C - see &lt;sustain&gt; below.</p>
+  <p>The ENV command uses 6 parameters;</p>
+    <pre><strong>ENV &lt;attack&gt;,&lt;decay&gt;,&lt;sustain&gt;,&lt;release&gt;,&lt;decay amplitude&gt;,&lt;sustain amplitude&gt;</strong></pre>
+  <p><strong>&lt;attack&gt;</strong> Defines the time that the amplitude takes to go from 0 to max (15). The ADSR envelope always starts at 0 amplitude and always increases to 15 during the attack phase. If you specify 0 for the Attack parameter, the amplitude will immediately be set to max (15). The normal range is 0 to 127 and will cause the amplitude to be increased by 1 every &lt;attack&gt; frames. However, if you specify a negative number (possible range -1 to -128, though  -1 to -15 is more sensible) will cause &lt;attack&gt; to be subtracted from the amplitude every frame. This will cause a much faster attack phase but care must be taken as you will introduce undesirable (or maybe desirable) artefacts if the amplitude is changed too fast.</p>
+  <p><strong>&lt;decay&gt;</strong> Defines the time that the amplitude takes to go from max (15) to &lt;sustain amplitude&gt;. If you specify 0, the amplitude will immediately be set to &lt;sustain amplitude&gt;.</p>
+  <p><strong>&lt;sustain&gt;</strong> Defines the time that the ADSR is held in the sustain phase. The normal range is 1 to 127 in frames. If you set this parameter to 0, the ADSR will be held in the sustain phase infinitely until you manually stop the note (various ways, explained later). If you specify a negative number (range -1 to -128), the sustain phase will last for the length of the note, less the sustain value. This parameter is also used for Voice C instruments.</p>
+  <p><strong>&lt;release&gt;</strong> Defines the time taken to reduce the amplitude from the &lt;sustain amplitude&gt; to 0. Range is exactly the same as &lt;attack&gt;.</p>
+  <p><strong>&lt;decay amplitude&gt;</strong> The amplitude level at the end of the decay phase.</p>
+  <p><strong>&lt;sustain amplitude&gt;</strong> The amplitude level at the end of the sustain phase.</p>
+  <p><strong>Note on &lt;decay amplitude&gt; and &lt;sustain amplitude&gt;: if these two parameters are equal, the amplitude will be held at that level during the sustain phase. Otherwise the amplitude will either increase or decrease (depending which is greater) over the course of the sustain phase. This allows you to have a (negative or positive) sloped sustain phase</strong>.</p>
+  <div class="diagramBox"><img src="images/adsr2pic.png" width="640" height="399" /></div>
+  <div class="example_box">
+    <p><strong>ENV example:</strong></p>
+    <pre>			ENV 3,2,9,2,5,10</pre>
+    <p>Defines an envelope that increases the amplitude every 3 frames until it reaches 15 (attack phase). Then decreases the amplitude every 2 frames until it reaches 5 (decay phase). Then during the sustain phase, increase the amplitude every 9 frames until it reaches 10. Then decreases the amplitude every 2 frames until it reaches 0 (release phase).</p>
+  </div>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="DCM" id="DCM"></a>DCM (Duty Cycle Modulation)</h3>
+  <pre>			ENV 0,0,0,0,0,0
+			<strong>DCM OFF,0,0,0</strong>
+			PLK OFF,0,0,0,0
+			ARP OFF,0,0,0,0,0,0,0
+			VIB 0,0,0,0
+  </pre>
+  <p>Scope : Voices A &amp; B</p>
+  <p>Explanation : This defines how the Duty Cycle is set and optionally modulated. This setting only applies to instruments for Voice A &amp; B but you still need to specify the command in all instruments (remember about all instruments being a fixed size with the commands all in the same order and all having the correct number of parameters?) but the settings for DCM are ignored by Voice C &amp; D.</p>
+  <p>In addition to the parameters, the DCM command relies on you defining a table of &quot;Duty Values&quot;. You can have a maximum of 255 duty values in the table. If you look in the template song under the Instrument definitions you'll see:</p>
+  <pre>DUTY_TABLE		db DUTY0,DUTY1,DUTY2,DUTY3</pre>
+  <p>Don't change the label &quot;DUTY_TABLE&quot;, Nijuu expects this to be there and named as such. The Duty Table in the template song just has four entries which are the four possible values that can be written to the hardware registers (DUTY0=$00, DUTY1=$40, DUTY2=$80 and DUTY3=$C0). You can use the labels or put numbers in there if you like but make sure you only enter valid numbers as there's no error checking. You are not limited to just these four entries, for example:</p>
+  <pre>DUTY_TABLE		db DUTY0,DUTY1,DUTY2,DUTY3
+			db DUTY0,DUTY2
+			db DUTY3,DUTY2,DUTY1,DUTY0
+			etc</pre>
+  <p>The reason you might do this should become obvious once the parameters for DCM are explained.</p>
+  <p>DCM requires 4 parameters:</p>
+  <pre><strong>DCM &lt;mode&gt;,&lt;speed&gt;,&lt;start duty index&gt;,&lt;end duty index&gt;</strong></pre>
+  <p><strong>&lt;start duty index&gt; &amp; &lt;end duty index&gt; </strong>These two numbers correspond to the start and end index into your DUTY_TABLE that you'd like DCM to use. How it uses them depends on the &lt;mode&gt; and &lt;speed&gt; setting.</p>
+  <p><strong>&lt;speed&gt; </strong>This is the speed at which duty modulation steps through the section of your duty table as defined by &lt;start duty index&gt; and &lt;end duty index&gt;. The speed is either in frames or by counting notes depending on the &lt;mode&gt;.</p>
+  <p><strong>&lt;mode&gt; </strong>There are 5 possible modes for DCM.</p>
+  <blockquote>
+    <p>OFF - default setting. In this mode, the &lt;start duty index&gt; will set the duty for the voice.</p>
+    <p>CNTR_LOOP - In this mode, the duty table is stepped through from &lt;start&gt; to &lt;end&gt; every &lt;speed&gt; frames. Once &lt;end&gt; is reached it will go back to &lt;start&gt;.</p>
+    <p>CNTR_HOLD - In this mode, the duty table is stepped through from &lt;start&gt; to &lt;end&gt; every &lt;speed&gt; frames. Once &lt;end&gt; is reached it will stay there until a new note is played.</p>
+    <p>NOTE_LOOP - In this mode, the duty table is stepped through from &lt;start&gt; to &lt;end&gt; every &lt;speed&gt; notes. Once &lt;end&gt; is reached it will go back to &lt;start&gt;.</p>
+    <p>NOTE_HOLD - In this mode, the duty table is stepped through from &lt;start&gt; to &lt;end&gt; every &lt;speed&gt; notes. Once &lt;end&gt; is reached it will stay there until  you issue another command to select an instrument  (it will make sense later).</p>
+    </blockquote>
+  <div class="example_box">
+    <p><strong>DCM examples</strong></p>
+    <pre>			DCM CNTR_LOOP,0,3,3</pre>
+    <p>This will cause the duty of the note to be cycled around entries 0 to 3 in your DUTY_TABLE, at a speed of every 3 frames.</p>
+    <pre>			DCM NOTE_HOLD,1,8,1</pre>
+    <p>This will cause the duty of the note to step through your DUTY_TABLE from index 1 to 8, every time a new note is played, until entry 8 is reached. It is then held at index 8 for each new note until the end of the sequence or until a new instrument command occurs.</p>
+  </div>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="PLK" id="PLK"></a>PLK (&quot;pluck&quot;)</h3>
+  <pre>			ENV 0,0,0,0,0,0
+			DCM OFF,0,0,0
+			<strong>PLK OFF,0,0,0,0</strong>
+			ARP OFF,0,0,0,0,0,0,0
+			VIB 0,0,0
+  </pre>
+  <p>Scope : Voices A, B, C &amp; D</p>
+  <p>First off, the name. &quot;Pluck&quot; is what I settled on because I think of it in terms of guitar playing. Something akin to digging in harder with your plectrum/nail/finger to get that extra bit of attack at the start of the note. However, in Nijuu, it's a little more complicated than just increasing the attack amplitude.</p>
+  <p>PLK requires 5 parameters:</p>
+  <pre><strong>PLK &lt;mode&gt;,&lt;pitch&gt;,&lt;amplitude offset&gt;,&lt;time&gt;,&lt;aux&gt;</strong></pre>
+<pre><strong>
+
+&lt;mode&gt;</strong></pre>
+<p>There are 4 standard modes for PLK and 3 special modes. First the 4 standard modes:</p>
+  <blockquote>
+    <p>(OFF : turns the pluck effect off)</p>
+    <p>REL : For &lt;time&gt; frames at the start of a note, &lt;pitch&gt; is added to the current note pitch, &lt;amplitude offset&gt; is added to the current amplitude.</p>
+    <p>ABS : For &lt;time&gt; frames at the start of a note, the current note pitch is overwritten by &lt;pitch&gt; and &lt;amplitude offset&gt; is added to the current amplitude.</p>
+    <p>REL_DCM : For &lt;time&gt; frames at the start of a note, &lt;pitch&gt; is added to the current note pitch, &lt;amplitude offset&gt; is added to the current amplitude and if the voice is A or B, the duty cycle value for the current note is replaced by &lt;duty&gt;.</p>
+    <p>ABS_DCM : For &lt;time&gt; frames at the start of a note, the current note pitch is overwritten by &lt;pitch&gt;, &lt;amplitude offset&gt; is added to the current amplitude and if the voice is A or B, the duty cycle value for the current note is replace by &lt;duty&gt;.    </p>
+  </blockquote>
+  <p><strong>&lt;pitch&gt; </strong>Is the pitch value to set. The value is always in semi-tones. For the REL modes, you can specify positive or negative offsets.</p>
+  <p><strong>&lt;amplitude offset&gt; </strong>Is added to the current note amplitude. The range is -128 to 127 but for practicality the range -15 to +15 is only really valid. If the resulting amplitude should go out of the valid bounds (0 to 15), the amplitude is clamped at the limit.</p>
+  <p><strong>&lt;time&gt; </strong>Is the time, in frames, that the effect lasts for from the start of each note. Range 1 to 255.</p>
+  <p><strong>&lt;aux&gt; </strong>In the case of the two _DCM modes, &lt;duty&gt; overrides the normal duty for the duration of the PLK effect. This is a direct setting and is not an index into your DUTY_TABLE. As with defining the DUTY_TABLE, it's handy to use the pre-defined names: DUTY0, DUTY1, DUTY2, DUTY3 though you can specify the numbers but it's then up to you to make sure the numbers are valid or results will be unpredictable. In the &quot;Special PLK Modes&quot;, this parameter has a different use.</p>
+  <p><strong>ADVANCED: PLK Special Modes</strong></p>
+  <p>There are 3 special PLK modes that use the parameters slightly differently (and require a little extra data in one case) though all modes still require 5 parameters. The reasons they are special is because the Pluck sound is actually played on a separate voice instead of the voice that the instrument is assigned to. More explanation after the modes.</p>
+  <p>&quot;NOISE&quot;</p>
+<pre><strong>PLK NOISE,&lt;pitch&gt;,&lt;amplitude offset&gt;,&lt;time&gt;,&lt;priority&gt;</strong></pre>  
+<p>Make the PLK sound occur on Voice D (Noise). In this mode <strong>&lt;pitch&gt;</strong> sets the noise channel pitch (absolute), <strong>&lt;amplitude offset&gt;</strong> is added to the amplitude of the note to get the noise amplitude, <strong>&lt;time&gt;</strong> is the number of frames that the effect lasts for and<strong> &lt;aux&gt;</strong> becomes <strong>&lt;priority&gt;</strong>. I'll explain &quot;priority&quot; after I've listed all three modes because the operation is the same for each.</p>
+  <p>&quot;TRI&quot;</p>
+<pre><strong>PLK TRI,&lt;pitch&gt;,&lt;detune&gt;,&lt;time&gt;,&lt;priority&gt;</strong></pre>  
+<p>Make the PLK sound occur on Voice C (Triangle). In this mode,<strong> &lt;pitch&gt;</strong> is the semi-tone offset from the note played, <strong>&lt;amplitude offset&gt;</strong> becomes <strong>&lt;detune&gt;</strong> and is an amount to add to the 11-bit frequency setting of the Triangle voice for the duration of the PLK sound.<strong> &lt;time&gt;</strong> is the number of frames that the efffect lasts for and <strong>&lt;aux&gt;</strong>, again, becomes <strong>&lt;priority&gt;</strong>.</p>
+  <p>&quot;SQ&quot;</p>
+<pre><strong>PLK SQ,&lt;voice&gt;,&lt;envelope number&gt;,&lt;time&gt;,&lt;priority&gt;</strong></pre>  
+<p>Make the PLK sound occur on either Voice A or Voice B. In thie mode<strong> &lt;pitch&gt;</strong> becomes <strong>&lt;voice&gt;</strong> (explained shortly),<strong> &lt;amplitude offset&gt;</strong> becomes <strong>&lt;envelope number&gt;</strong> (again, explained shortly), <strong>&lt;time&gt;</strong> is the number of frames the effect lasts for and <strong>&lt;aux&gt;</strong>, again, becomes <strong>&lt;priority&gt;</strong>.</p>
+  <p><strong>ADVANCED: PLK Special Modes Explained</strong></p>
+  <blockquote>
+    <p>&quot;SQ&quot;</p>
+    <p>I'll tackle &quot;SQ&quot; mode first as that's the slightly more complicated one. In SQ mode, the &lt;voice&gt; (pitch) parameter specifies the voice to use for the effect so either &quot;VOICE_A&quot; or &quot;VOICE_B&quot;. Both work in exactly the same way so it just depends on your choice, mainly dictated by what will be playing on A &amp; B as, obviously, the effect will steal the voice for the number of frames specified by the &lt;time&gt; parameter each time a note is played on the parent voice. The &lt;priority&gt; setting can help with this decision too (see below for details)</p>
+    <p>The &quot;SQ&quot; modes differ from NOISE and TRI in that you need to define a small pitch/amplitude envelope table that describes what you want to happen on Voice A/B for the duration of the effect. If you look in the template song below the Instruments you'll see a table &quot;PLK_ENV_TABLE&quot; and then below that an entry labelled &quot;SQ_PLK_ENV0&quot;. There are four parameters per frame and the number of frames depends on the <strong>&lt;time&gt;</strong> parameter in the instrument (though there is no error checking so make sure you've enough entries in the envelope table to match the &lt;time&gt; parameter). The parameters are;</p>
+    <blockquote>
+      <pre><strong>&lt;amplitude&gt;, &lt;duty&gt;, &lt;semi-tone offset&gt;, &lt;frequency offset&gt;</strong></pre>
+      </blockquote>
+    <p>&lt;amplitude&gt; is the direct amplitude setting of the selected voice (A or B), range 0-15. &lt;duty&gt; is the duty setting, like before you can use the <a href="#DCM" target="_self">DUTY0</a> etc. labels or set the number directly if you're more comfortable. &lt;semi-tone offset&gt; is offset from the note played and can be positive or negative. &lt;detune&gt; is a micro adjustment to the resulting PLK pitch and adjusts the 11-bit frequency by adding this value to it. This needs to be a positve number (0 to 127).</p>
+    <p>&quot;Priority&quot;</p>
+    <p>Because these PLK modes steal from another voice, the resulting sound can be quite jarring if used excessively. You may want that sound but because it's often not desireable, there is a priority setting for the effect. There are only two settings &quot;LOW&quot; and &quot;HIGH&quot;. In &quot;HIGH&quot; setting, the effect will be forced upon the child voice, regardless of what is playing. In &quot;LOW&quot; setting, at the point of needing to steal the child voice, Nijuu first examines what is playing by checking the <a href="#ENV" target="_self">ADSR</a> phase. If it's reached &quot;Release&quot; or has ended then the voice will be stolen, otherwise the stealing is rejected and your parent voice will play that note as if it had no PLK effect.</p>
+    <p>&quot;Drums&quot;</p>
+    <p>Once you've read how the <a href="#TheDrumTrack" target="_self">Drum Track</a> works, you might want to know that the <a href="#TheDrumTrack" target="_self">Drum Track</a> always has priority over these 3 special PLK modes, unless you've set the <a href="#HOLD" target="_self">HOLD</a> parameter.</p>
+  </blockquote>
+  <div class="example_box">
+      <p><strong>Valid Combinations</strong></p>
+  <p>A quick note on valid combinations of parent voice (the voice that the instrument is selected on) and the child voice (the voice nominated by &lt;mode&gt; to play the PLK sound). There are some obvious ways NOT to set up an instrument e.g. don't select a TRI mode on an instrument that is being used on Voice C (the Triangle voice). Actually it might work, I've not tried but if you're going to do that, just use a normal ABS/REL mode instead. Same as selecting a NOISE mode for Voice D (the Noise voice). So, realistically, the valid combinations would be:</p>
+    <p>Parent A, B &amp; C with &quot;NOISE&quot; mode</p>
+    <p>Parent A &amp; B with &quot;TRI mode</p>
+    <p>Parent C with &quot;SQ&quot; mode  </p>
+  </div>
+<p><strong>PLK Examples</strong></p>
+<div class="example_box">
+<br />
+<pre><strong>PLK REL,12,0,1,0</strong></pre>
+    <blockquote>
+      <p>Will add an offset of 12 to the pitch of the note played for the first 1 frame. The amplitude is untouched. The last 0 is not used as this is not a _DCM mode.</p>
+    </blockquote>
+<pre><strong>PLK REL_PWM,-12,-2,3,DUTY2</strong></pre>
+    <blockquote>
+      <p>For the first 3 frames, add an offset of -12 to the pitch of the note played, the amplitude will be adjusted by -2 and the duty will be overwritten by DUTY2.</p>
+    </blockquote>
+<pre><strong>PLK NOISE,2,0,2,LOW</strong></pre>
+<blockquote>
+  <p>For the first 2 frames of the note, the noise channel (D) will play at pitch 2. The amplitude of the noise will be the same as the note played (offset 0). The effect would have a LOW priority so any normal activity on Voice D would take precedence.</p>
+</blockquote>
+<pre><strong>PLK SQ,VOICE_A,0,3,HIGH</strong></pre>
+<blockquote>
+  <p>For the first 3 frames of the nose, Voice A will play through the defines envelope #0. The effect would have a HIGH priority so would overwrite what was already playing on Voice A for those 3 frames each time a note is played.</p>
+  <pre><strong>SQ_PLK_ENV0		DB $0C,DUTY2,-12,2
+    			DB $06,DUTY2,-12,2
+			DB $02,DUTY2,-12,2</strong>
+                    </pre>
+  <p>And the definition of the PLK envelope: this will make the effect go from amplitude $0c down to amplitude $02 with a duty setting of DUTY2 ($80), an offset of -12 semi-tones and a detune value of 2 over 3 frames.<br>
+  </p>
+</blockquote>
+    </div>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="ARP" id="ARP"></a>ARP (Arpeggio)</h3>
+  <pre>			ENV 0,0,0,0,0,0
+			DCM OFF,0,0,0
+			PLK OFF,0,0,0,0
+			<strong>ARP OFF,0,0,0,0,0,0,0</strong>
+			VIB 0,0,0
+  </pre>
+  <p>Scope : Voices A, B, C &amp; D</p>
+  <p>This defines the arpeggio setting for the instrument. I have to admit I'm not entirely satisfied with how this is currently but the implementation will make a bit of sense once you get onto the commands that allow you to modify instruments on-the-fly from within sequences.</p>
+  <p>ARP requires.... 8 parameters. I know, I know....</p>
+  <pre><strong>ARP &lt;mode&gt;,&lt;speed&gt;,&lt;number of notes&gt;,&lt;note 1&gt;,&lt;note 2&gt;,&lt;note 3&gt;,&lt;note 4&gt;,&lt;note 5&gt;</strong></pre>
+  <p><strong>&lt;mode&gt; </strong>There are two modes for ARP: relative (REL) and absolute (ABS). In relative mode, the notes are added to the current note (semi tones) while in absolute mode, the notes are set directly, ignoring the current playing note. You might think this is a bizarre mode to have but you can do some interesting tricks with it. Please note that the mode does not refer to &quot;relative&quot; in the same way that MML arpeggios are, though the arpeggios themselves are relative, as they are in MML (more explanation below).</p>
+  <p>Note : There is a special feature in ABS (absolute) mode. Even though the note offsets are absolute i.e. not added to the current note, if one of your &lt;note&gt; parameters is 0 (zero) the original note is played instead of using an absolute value (i.e. note 0). Despite being a bit illogial, I did this for a specific reason. It allows you to change notes in the sequence and only the root note of the arpeggio will change, the other notes will remain at the pitch set by the ARP (ABS) command.</p>
+  <p><strong>&lt;speed&gt; </strong>This is the number of frames between switching notes. Range 1 to 255.</p>
+  <p><strong>&lt;number of notes&gt; </strong>This is the number of notes in the arpeggio. I opted for &quot;one more than I'd normally ever use&quot; as a maximum. I chose this rather rigid format because the <a href="#SInMI" target="_self">commands to modify the arpeggio settings from within a Sequence</a> rely on numerical indexes into the current Instrument definition. As I say, I'm not entirely happy with it, but it works.</p>
+  <p>(Advanced note : There's ways of doing complicated and long arpeggios using short notes, <a href="#LG" target="_self">legato mode</a> and a <a href="#SRnER" target="_self">nested loop in a sequence</a> so there's more than one way of arpeggiating.)</p>
+  <p><strong>&lt;note 1&gt;,&lt;note 2&gt;,&lt;note 3&gt;,&lt;note 4&gt;,&lt;note 5&gt; </strong>If you want 3 notes in your arpeggio, set &lt;number of notes&gt; to 3 and enter values for &lt;note 1&gt;, &lt;note 2&gt; and &lt;note 3&gt;. You can ignore 4 &amp; 5 (unless you set &lt;number of notes&gt; to 4 or 5 of course). I think you get the idea - arpeggio is limited to 5 notes maximum. BUT you still have to have the full number of parameters for the ARP command so just set the ones you're note using to 0. Or anything really, it doesn't matter.</p>
+  <p>The offsets are relative to the root note and to each other (like MML).</p>
+  <div class="example_box">
+    <p><strong>ARP examples</strong></p>
+    <p>
+    <pre>			<strong>ARP REL,1,3,4,3,-7</strong>,0,0</pre>
+    </p>
+    <p>Will cycle the pitch offset between 4, 3 and -7 (major triad), changing every 1 frame . The last two 0's are irrelevant (but necessary!)</p>
+    <p>
+    <pre>			<strong>ARP ABS,3,2,0,48</strong>,0,0,0</pre>
+    </p>
+    <p>Will cycle the pitch between the original note (see the note in the &lt;mode&gt; explanation above) and note number 48, every 3 frames. The last three 0's are irrelevant (but necessary!)</p>
+  </div>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="VIB" id="VIB"></a>VIB (Vibrato)</h3>
+  <pre>			ENV 0,0,0,0,0,0
+			DCM OFF,0,0,0
+			PLK OFF,0,0,0,0
+			ARP OFF,0,0,0,0,0,0,0
+			<strong>VIB 0,0,0</strong>,<strong>0</strong></pre>
+  <p>Scope : Voices A, B &amp; C</p>
+  <p>This command defines vibrato for the instrument. I'm sure I don't need to explain what vibrato actually does but just in case, vibrato is the cyclic modulation of a note's pitch. <s>The method works but is a bit crude (because the note frequency setting in the APU is not linear, the depth of vibrato will change depending on how high or low the note is) and I may improve this at a later stage.</s> (Recently implemented &quot;linear&quot; frequency)</p>
+  <p>The VIB command requires 3 parameters:</p>
+  <pre><strong>VIB &lt;depth&gt;,&lt;speed&gt;,&lt;delay&gt;</strong>,<strong>&lt;depth mod&gt;</strong></pre>
+  <p><strong>&lt;depth&gt; </strong>This is the value that is cyclically added/subtracted from the 11-bit frequency of the current note. It's the combination of &lt;depth&gt; and &lt;speed&gt; that gives the vibrato it's actual overall depth.</p>
+  <p><strong>&lt;speed&gt; </strong>This is the rate of change between adding/subtracting the &lt;depth&gt; value to/from the current note frequency.</p>
+  <p><strong>&lt;delay&gt; </strong>This is the number of frames from the start of the note before the vibrato effect kicks in.</p>
+  <p><strong>&lt;depth mod&gt; </strong>This number is added to the depth every cycle of the vibrato. Set this value to 0 to disable. See below.</p>
+  <p>The only thing that needs special explanation is the &lt;depth mod&gt; parameter. Normally, vibrato depth is fixed and continues at the same level for the duration of the note (after the delay, of course). However, with the &lt;depth mod&gt; parameter you can increase the vibrato depth over time. To disable this feature you set the parameter to 0. However, any other number will be added to the vibrato depth, every cycle of the vibrato (this works out at a number of frames equal to half of the specified vibrato speed - this is because it's only &quot;safe&quot; to modifiy the depth at the &quot;zero&quot; crossing of the vibrato cycle to prevent the note going out of tune). The &lt;depth mod&gt; parameter can be positive or negative.</p>
+  <p>- postive values will start the vibrato depth at 1 and increase until it reaches the value specified by &lt;depth&gt;</p>
+  <p>- negative values will start the vibrato depth at &lt;depth&gt; and decrease until it reaches 1</p>
+  <p>The range of -128 to 127 is valid however, extreme values can cause the note to sound off pitch.</p>
+  <div class="example_box">
+    <p><strong>VIB Example</strong></p>
+    <p>VIB 1,3,16,0</p>
+    <p>After a delay of 16 frames, a value of 1 will be cyclically added/subtracted to/from the current note's frequency value until the note ends.</p>
+    <p>VIB 30,2,1,1</p>
+    <p>After a delay of 1 frame, the vibrato depth with increase gradually until it reaches 30</p>
+    <p>VIB 40,3,8,-2</p>
+    <p>After a delay of 8 frames, the vibrato depth with start at 40 and reduce gradually toward 1 (by adding -2 every cycle).</p>
+  </div>
+</div>
+<div class="sectionBreak"></div>
+<h2><a name="Sequences" id="Sequences"></a>Sequences</h2>
+  <p>In Nijuu, sequences are where you enter all your musical data such as <a href="#EnteringMusicABC" target="_self">notes</a>, <a href="#RnRD" target="_self">rests</a> etc. and also <a href="#SequenceCommands" target="_self">commands</a> that affect the playback of those notes.</p>
+  <p>In a similar way to the table &quot;INSTRUMENT_TABLE&quot;, you must maintain a table of pointers to your sequences. If you look towards the bottom of the template file you'll see;</p>
+  <pre>SEQUENCE_TABLE		DW S0</pre>
+<p>This is where you put the 16-bit (DW) addresses of each of your Sequences and (as with Instruments) the order in which they appear in the SEQUENCE_TABLE table determines the number (starting at 0) that is used when arranging your sequences into Tracks (we'll get to that). As with Instruments, I've created assembler macros to handle commands and parameters. The only aspect that doesn't have a macro command is actually putting musical notes into your sequences. So let's start there.</p>
+<h3><a name="EnteringMusicABC" id="EnteringMusicABC"></a>Entering Musical Data : Voice A, B &amp; C</h3>
+<p>To add musical notes to a sequence you use the assembler command &quot;db&quot; followed by the note number(s) or name(s). The valid range for note numbers is $00 to $5D which I've equated (in &quot;nijuu.h&quot;) to A1 through C8. The format for the notes is the note name (CDEFGAB) followed immediately by the octave number e.g.</p>
+      <pre>			db C2
+			db D3,E3,F3,G3</pre>
+      <p>In Nijuu, I've also created labels for accidentals. Flats are represented by the letter &quot;b&quot;. Unfortunately, the &quot;#&quot; symbol has a special use in ASM6 (and almost every other assembler) so it cannot be used for sharps. Instead I use a lower case &quot;s&quot;.</p>
+  <pre>			db Cs2
+      			db Ds3,E3,Gb3,Gs3</pre>
+      <p><strong>NOTE : Names of music notes need to be capitalised (apart from the "s" and &quot;b&quot; to represent accidentals). ASM6 will throw quite obscure errors if you don't capitalise your note names properly. </strong></p>
+  <h3><a name="EnteringMusicD" id="EnteringMusicD"></a>Entering Musical Data : Voice D</h3>
+<p>Same concept but with a slight difference. For the noise voice (D), just use the numbers $00 to $0F for the pitch. OK, you could use &quot;A1&quot; etc. but that wouldn't accurately represent the &quot;pitch&quot; of the noise.</p>
+<p>As you probably know, the noise generator for voice D has two modes of random number generation. To access the other mode, use note numbers $10 to $1F.</p>
+<h3><a name="NoteLengths" id="NoteLengths"></a>Note Lengths</h3>
+<p>To set the length of a note there is a <a href="#D" target="_self">macro command,  D,</a> which stands for &quot;duration&quot;. When used in a Sequence, all subsequent note durations are set to the value specified in the command, until the next D command. More about this in the <a href="#SequenceCommands" target="_self">Sequence Commands</a> section.</p>
+<h3><a name="SequencePlaybackNotes" id="SequencePlaybackNotes"></a>Sequence Playback Behaviour for Notes</h3>
+<p>When Nijuu encounters a note (or a <a href="#RnRD" target="_self">rest</a>) in a sequence, no more data is read from the sequence until that note has finished playing.</p>
+<div class="sectionBreak"></div>
+<h2><a name="SequenceCommands" id="SequenceCommands"></a>Sequence Commands</h2>
+<p>There are several macro commands that are used in Sequences to control how notes are played, control the flow of a sequence and modify instrument parameters.</p>
+<h3><a name="SequencePlaybackCommands" id="SequencePlaybackCommands"></a>Sequence Playback Behaviour for Commands</h3>
+<p>When Nijuu encounters a note or a rest in a sequence, the sequence is effectively suspended for the duration of that note/rest. This is different with Sequence Commands. You can place as many consecutive Sequence Commands as you like in your Sequence (apart from <a href="#Bend" target="_self">Pitch Bend, "B"</a>) and they will all be processed on the same frame and Nijuu will keep fetching and processing commands until a note/rest is encountered. Or the end of the sequence, of course.</p>
+<h3><a name="BasicCommands" id="BasicCommands"></a>Basic Commands</h3>
+<p>First some of the simpler-to-understand commands and concepts to get you started.</p>
+<p><strong>Note : the &quot;Bytes&quot; value is just for reference. It tells you how much data Nijuu uses internally and has nothing to do with how you use the commands.</strong></p>
+<div class="InstrumentCommand">
+<h3><a name="ES" id="ES"></a>ES (End of Sequence)</h3>
+<p>Definition: end of Sequence.</p>
+<p>Usage: <strong>ES</strong> (no parameters)</p>
+<p>Scope: Voices A, B, C, D and Drum sequences</p>
+<p>Explanation : Not the most obvious place to start, ES defines the end of a Sequence. All Sequences <strong>must</strong> end with this command.</p>
+<p>(Bytes: 1)</p>
+</div>
+<div class="InstrumentCommand">
+    <h3><a name="V" id="V"></a>V (Velocity)</h3>
+    <p>Definition : set &quot;Velocity&quot; for notes.</p>
+    <p>Usage: <strong>V</strong> &lt;velocity&gt;</p>
+    <p>Scope: Voices A, B, D &amp; Drum sequences</p>
+    <p>Explantion: Nijuu uses simple scaling to scale the amplitude of notes by a ratio of &lt;velocity&gt;:15 (i.e. a value of 15 is full volume, a value of 8 is about half, and so on). When this command is used, all subsequent notes in the sequence will be played using the same velocity until a new V command is used. Valid range for &lt;velocity&gt; is 0 to 15.</p>
+    <p>(Bytes: 1)</p>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="D" id="D"></a>D (Duration)</h3>
+  <p>Definition : set duration of notes.</p>
+  <p>Usage: <strong>D</strong> &lt;duration&gt;</p>
+  <p>Scope: Voices A, B, C, D &amp; Drum sequences</p>
+  <p>Explanation: This command sets the duration of the notes in frames. When this command is used, all subsequent notes will use the same duration until a new D command is used. Valid range for &lt;duration&gt; is 1 to 255.</p>
+  <p>(Bytes: 1 unless the duration is greater than 32, then two bytes are used.)</p>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="RnRD" id="RnRD"></a>R &amp; RD (Rest)</h3>
+  <p>Definition : perform a rest.</p>
+  <p>Usage: <strong>R</strong> or <strong>RD</strong> &lt;duration&gt; or <strong>&quot;_&quot;</strong>. See explanation.</p>
+  <p>Scope: Voices A, B, C &amp; D.</p>
+  <p>Explanation: This command performs a rest in a sequence. There are two types of rest. The command &quot;R&quot; performs a rest who's duration is taken from the last D (duration) command.</p>
+  <p>With &quot;RD&quot; you specify the duration. Valid range for &lt;duration&gt; when using RD is 1 to 255. &quot;RD&quot; does not affect the duration of subsequent notes (in the way that the &quot;D&quot; command does).</p>
+  <p>The &quot;_&quot; (underscore) token can be used instead of &quot;R&quot;. It has the advantage of being able to be used in a line of notes (ASM6 does not allow you to use a macro in this way) and also is visually more readable e.g.</p>
+  <pre>			db C4,E4,G4,<strong>_</strong>,E4,C4</pre>
+  <p>is allowed, whereas;</p>
+  <pre>			db C4,E4,G4,<strong>R</strong>,E4,C4</pre>
+  <p>is not. To enter the same sequence using the &quot;R&quot; command you'd have to do;</p>
+  <pre>			db C4,E4,G4
+  			R
+			db E4 C4</pre></p>
+            <p>When a rest is encountered in a Sequence, it causes the ADSR envelope for the voice to be set to the release phase until the next note. When used on a Sequence for Voice C, the output of Voice C is stopped until the next note.</p>
+  <p>(Bytes: 1 unless the duration is greater than 32, then two bytes are used.)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="I" id="I"></a>I (Instrument Select)</h3>
+  <p>Definition : select an <a href="#InstrumentExplanation" target="_self">Instrument</a> to use in the Sequence</p>
+  <p>Usage: <strong>I</strong> &lt;instrument number&gt;</p>
+  <p>Scope: Voices A, B, C &amp; D</p>
+  <p>Explanation: This command selects a new instrument for the Sequence. All subsequent notes are played using the settings of the new instrument until a new I command is used.</p>
+  <p>(Bytes: 1 unless the instrument number is greater than 32, then two bytes are used.)</p>
+</div>
+<h3><a name="AdvancedCommands" id="AdvancedCommands"></a>Advanced Commands</h3>
+<p>If you want to delve a little deeper into sound creation with Nijuu, you'll need to understand the more complicated commands and concepts.</p>
+<div class="InstrumentCommand">
+  <h3><a name="SRnER" id="SRnER"></a>SR &amp; ER (Start Repeat&amp; End Repeat)</h3>
+  <p>Definition : define start and end of repeat section</p>
+  <p>Usage: <strong>SR</strong> &lt;number of repeats&gt; and  <strong>ER</strong> (no parameters)</p>
+  <p>Scope: Voices A, B, C, D &amp; Drum sequences</p>
+  <p>Explanation: This pair of commands is used to define a repeating section in a sequence. Everything between the SR and ER commands is repeated for as many times as you specify by &lt;number of repeats&gt;. Repeat sections cannot be nested within a sequence, though there is an equivalent Track Command which then allows you to nest a Sequence loop inside a Track loop. Valid range for the number of repeats is 1 to 255.</p>
+  <p>(Bytes: 2 for SR, 1 for ER.)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="LG" id="LG"></a>LG (Legato)</h3>
+  <p>Definition : switch to Legato Mode (or switch Legato Mode off)</p>
+  <p>Usage: <strong>LG</strong> &lt;mode&gt; or <strong>LG OFF</strong> to turn Legato mode off</p>
+  <p>Scope: Voices A, B, C &amp; D</p>
+  <p>Explanation: &quot;Legato Mode&quot; might be a bit misleading if you're thinking of the actual musical term. It's one of those cases where I struggled to find a single word that fitted the effect/function and &quot;legato&quot; is pretty close. Put simply, enabling legato mode prevents the ADSR envelope from restarting with each new note, allowing notes to kind-of flow into each other. However, there are two distinct modes for Legato and for those two modes there are two sub-modes, giving four modes in total. They are TRAN1, TRAN2, HOLD1 and HOLD2.</p>
+  <p>First the difference between TRAN and HOLD:</p>
+  <p>In TRAN modes, all subsequent notes after the LG command will not retrigger the ADSR. This means that eventually (unless you have an ADSR with &quot;infinite&quot; sustatin, see ENV command) as the ADSR passes through the Release phase and eventually stops, you won't hear any more notes in that Sequence. In this case, you need to use a &quot;LG OFF&quot; command to start the ADSR triggering again. TRAN is short for &quot;transient&quot;, relating to the behaviour of the ADSR in this mode.</p>
+  <p>In HOLD modes, the legato notes are held in the Sustain phase of the ADSR until you issue a &quot;LG OFF&quot; command.</p>
+  <p>Now the sub-modes, where &lt;mode&gt; is either TRAN or HOLD:</p>
+  <p>&lt;mode&gt;1 - does not reset the counter that is used for VIB &lt;delay&gt;, PLK &lt;time&gt; and DCM (when in NOTE_ modes). Therefore for each subsequent note that is played, you won't hear the vibrato delay (so the vibrato effect will just continue), the PLK settings will not be heard and if you have DCM in one of the NOTE_ modes, the duty index will stay at it's current index.</p>
+  <p>&lt;mode&gt;2 - resets the counter that is described in MODE1 so the opposite is true. You'll hear the vibrato delay again, the PLK sound will be heard and if you have DCM in one of the NOTE_ modes, your duty table will be stepped through as normal.</p>
+  <p>Legato Mode has many uses, the main one being to be able to extend the length of a note beyond 255 frames.</p>
+  <pre>			D 200
+			LG TRAN1
+			db Fs4,Fs4,Fs4,Fs4
+			LG OFF
+			ES</pre>
+  <p>This sequence enables a Transient legato, then repeats F#4 with a length of 200 frames, four times. Providing your ADSR settings will stretch to 800 frames. If not you can always set the Sustain to 0 to give you &quot;infinite&quot; Sustain, ending the long composite note with a Rest or RL command (next).</p>
+  <p><strong>Note that the first note following a LG command will be played normally, each subsequent note will behave depending on the mode you have set.</strong></p>
+  <p>(Bytes: 2)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="RL" id="RL"></a>RL (Release Envelope)</h3>
+  <p>Definition : force envelope into release phase.</p>
+  <p>Usage: <strong>RL</strong> &lt;mode&gt;</p>
+  <p>Scope: Voices A, B &amp; D</p>
+  <p>Explanation: The RL command is effectively a &quot;key off&quot; command. It does nothing except force the ADSR into the release phase. Primarily you'd use this in conjunction with LG so that you have more control over the ADSR over the course of a sequence of legato notes. You can do stuff like this in combination with LG;</p>
+  <pre>			D 32
+			LG TRAN1
+			db C4
+			RL
+			SR 16
+			D 4
+			db C4,G4,C5,G5
+			ER
+			LG OFF
+			ES
+</pre>
+  <p>This Sequence will play a C4 note that will last for 32 frames. Using an ENV with a long enough release phase, Legato mode is switched on and the ADSR is forced into the release phase, then the notes C4, G4, C5 & G5 are played with a duration of 4, 16 times. This will give you a little trill at the end of the original C4 note that fades out with the release phase of the envelope.</p>
+  <p>(Bytes: 1)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="SInMI" id="SInMI"></a>SI &amp; MI (Set/Modify Instrument Parameter)</h3>
+  <p>Definition : set (SI) or modify (MI) a parameter for the currently selected instrument.</p>
+  <p>Usage: <strong>SI</strong> &lt;parameter name&gt;,&lt;parameter value&gt; or <strong>MI</strong> &lt;parameter name&gt;,&lt;parameter value offset&gt;</p>
+  <p>Scope: Voices A, B, C &amp; D</p>
+  <p>Explanation: These two commands are used to modify parameters of the currently selected instrument from within a Sequence. They both do the same thing except that SI sets a parameter value directly where as MI adds an offset to the specified parameter. When using MI the valid range of offset is -128 to 127. It's up to yourself to determine if the results of the calculation will still be valid. This can sometimes be accidentally creative :)</p>
+  <p>The list of parameters that you can set (SI) or modify (MI) is in the file &quot;nijuu.h&quot; file but I'll put them here too for reference;</p>
+  <pre>			ENV_ATTACK
+			ENV_DECAY
+			ENV_SUSTAIN
+			ENV_RELEASE
+			ENV_DEC_AMP
+			ENV_SUS_AMP
+
+			DCM_MODE
+			DCM_START
+			DCM_END
+			DCM_SPEED
+
+			PLK_MODE
+			PLK_PITCH
+			PLK_AMP
+			PLK_TIME
+			PLK_AUX
+
+			ARP_MODE
+			ARP_SPEED
+			ARP_COUNT
+			ARP_INDEX_0
+			ARP_INDEX_1
+			ARP_INDEX_2
+			ARP_INDEX_3
+			ARP_INDEX_4
+
+			VIB_DEPTH
+			VIB_SPEED
+			VIB_DELAY
+</pre>
+  <p>The parameters names should be self explanatory. They correspond exactly to the Instrument parameters. See <a href="#InstrumentCommands" target="_self">Instruments</a> for explanations if it's not clear.</p>
+  <p>Mostly, setting and modifying Instrument parameters on the fly like this should yield the expected results but it's possible that certain combinations of the states of the particular variables at the point in time that you set or modify them could trip Nijuu up. I've tested the command quite thoroughly but not exhaustively. If you think you've found Nijuu misbehaving, drop me a line and I'll look into it.</p>
+  <p>One thing to note : no matter how many modifications you make to an instruments parameters, they will be wiped out when an &quot;I&quot; (select Instrument) command is encountered. Sometimes this is handy, other times you have to be a bit more creative with your Sequences e.g. there's nothing stopping you from creating a sequence that just selects an instrument and then ends. Then you could follow that with a sequence that plays a note and modifies some of the Instrument parameters. As long as you never had another &quot;I&quot; command, the modifications would stick. You can do some pretty flexible stuff like that, especially in combination with a SR/ER loop in your sequence using an MI command inside of the loop. e.g.</p>
+  <pre>	I 7			;select instrument #7
+	D 8			;set the note duration to 8
+	V 15			;set the note velocity to 15
+	LG HOLD1		;enable legato mode, hold
+	SR 16			;set up a repeating loop, set count to 16
+	db C4			;play a C4 note
+	MI VIB_DEPTH,+1		;add 1 to the vibrato depth
+	ER			;loop back to loop start, decrement loop counter
+	LG OFF			;turn legato off
+	ES			;end of sequence</pre>
+  
+  <p>By the time the loop exits, vibrato depth for the selected instrument will be 16 higher than before the loop (16 iterations, adding 1 each time). Of course, this example can be achieved simply by setting a &lt;depth mod&gt; parameter for vibrato but it serves as an illustration.</p>
+  <p>(Bytes: 3)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="PnPLG" id="PnPLG"></a>P &amp; PLG (Portamento)</h3>
+  <p>Definition : set portamento mode for sequence.</p>
+  <p>Usage: <strong>P</strong> &lt;time&gt;,&lt;delay&gt; or <strong>PLG</strong> &lt;time&gt;,&lt;delay&gt;</p>
+  <p>Scope: Voices A, B &amp; C</p>
+  <p>Explanation: These two commands turn portamento mode on for the current sequence. In portamento mode, notes are pitch swept from one note to the next, the &lt;time&gt; parameter sets the number of frames that the pitch sweep occurs over.  The &lt;delay&gt; parameter sets the number of frames into the note before the pitch begins to be swept. Sweeping of the pitch begins with the next note in the sequence (this is different to the <a href="#Bend" target="_self">pitch-bend command</a> which causes a note to be played itself).</p>
+  <p>PLG is a variant of P which cause Nijuu to only sweep the notes when <a href="#LG" target="_self">Legato</a> mode is active on the track (see Legato).</p>
+  <p>Both P and PLG have commands to switch them off. P_OFF and PLG_OFF, respectively although either will stop Portamento.</p>
+  <p>I probably should explain the relationship between &lt;time&gt;, &lt;delay&gt; and the actual duration of the note that is portamento-ed. A few diagrams should help:</p>
+  <div class="diagramBox">
+    <div align="center"><img src="images/port_pic.png" width="527" height="798" /></div>
+  </div>
+  <p>In the diagrams, the thin line (&quot;Start Pitch&quot; to &quot;End Pitch&quot;) represents the pitch changing over the duration of the note. In all the examples the pitch goes up. Obviously it can go down too. The sloping part of the Pitch line shows the period of time during which the pitch is being modified to reach the End Pitch. With shorter &lt;speed&gt; settings, the slope is steeper and the rate of change is faster. With larger &lt;speed&gt; settings, the opposite is true. If you specify a &lt;speed&gt; that is shorter than the note length, the pitch will reach End Pitch before the note is ended.</p>
+  <p>As you can see, by varying the delay and speed parameters you can achieve a wide range of sweep profiles. It is possible to set &lt;delay&gt; and &lt;speed&gt; to values which would excede the Note Duration. In this case, &lt;speed&gt; is modified at run-time on a case-by-case basis. This ensures that the End Pitch is always reached.</p>
+  <p>(Bytes: 3)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="Bend" id="Bend"></a>B</h3>
+  <p>Definition : perform pitch bend from one note to another</p>
+  <p>Usage: <strong>B</strong> &lt;start note&gt;,&lt;end note&gt;,&lt;speed&gt;,&lt;delay&gt;</p>
+  <p>Scope: Voices A, B &amp; C</p>
+  <p>Explanation: This command performs a smooth pitch bend between &lt;start note&gt; and &lt;end note&gt;. The duration of the note is determined, like other notes by, the duration that was set by the last D command. The &lt;speed&gt; is actually the number of frames over which the pitch change takes place. The &lt;delay&gt; parameter specifies how long into the note before pitch sweep starts to take effect. See <a href="#PnPLG" target="_self">P & PLG</a> for an explanation of how these parameters work together as they work in the same way for the B command.</p>
+  <p>(Bytes: 4)</p>
+  </div>
+  <div class="InstrumentCommand">
+  <h3><a name="SWEEP" id="SWEEP"></a>SW</h3>
+  <p>Definition : causes the pitches of all subsequent notes to be swept up/down</p>
+  <p>Usage: <strong>SW &lt;mode&gt;,&lt;offset&gt;,&lt;step&gt;</strong></p>
+  <p>Scope : Voices A, B, C &amp; D (though D only uses the two &quot;_NOTE&quot; modes, for obvious reasons.</p>
+  <p>Explanation: This command causes all subsequent notes to have their pitches swept up or down (depending on the mode). It differs from P and B in that there is no destination pitch so if you excede the limits of the pitch it will wrap around and continue sweeping until the note stops. There are four different modes:</p>
+  <blockquote>
+    <p>UP_NOTE : sweeps the pitch up by adding &lt;offset&gt; to the played note, every &lt;step&gt; frames.</p>
+    <p>DN_NOTE : sweeps the pitch down by subtracting &lt;offset&gt; from the played note, every &lt;step&gt; frames.</p>
+    <p>UP_FREQ : sweeps the pitch up by adding &lt;offset&gt; to the frequency value, every &lt;step&gt; frames.</p>
+    <p>DN_FREQ : sweeps the pitch down by subtracting &lt;offset&gt; from the frequency value, every &lt;step&gt; frames.</p>
+    <p>To turn Sweep off, use <strong>SW_OFF</strong></p>
+    </blockquote>
+  <p><strong>Voice D and Sweep</strong></p>
+  <p>You might have figured that only the two _NOTE modes are relevant to Voice D (Noise) because it's pitch is set using the numbers 0 to 15 (or 16 to 31 to access the alternative clock mode). However the _FREQ modes have a special use for Voice D.</p>
+  <p>When using the _NOTE modes, the pitch value cycles around the original note. So if you set a pitch of 2 and apply an upwards sweep, you'll hear the sequence;</p>
+  <p>2,3,4,5,6,7,8,9,10,11,12,13,14,15,<strong>0</strong>,1,2,3,4,5,6 etc.</p>
+  <p>or if you set a pitch of 24 (i.e using the second clock mode) you'll hear the sequence;</p>
+  <p>24,25,26,27,28,29,30,31,<strong>16</strong>,17,18,19,20 etc.</p>
+  <p>When using the _FREQ modes, the pitch value cycles around the entire range for Voice D. So this time, setting a pitch of 2 you'll hear;</p>
+  <p>2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31,0,1,2,3,4,5 etc.</p>
+  <p>or if you set a pitch of 24 you'll hear;</p>
+  <p>24,25,26,27,28,29,30,31,0,1,2,3,4,5,6,7,8,9,10 etc.</p>
+<p>(Bytes : 4)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="HOLD" id="HOLD"></a>HOLD</h3>
+  <p>Definition : sets hold mode for the voice</p>
+  <p>Usage: <strong>HOLD</strong> &lt;level&gt;</p>
+  <p>Scope: Voices A, B, C &amp; D</p>
+  <p>Explanation: This command is used to temporarily stop the drum track from stealing from the voice that the sequence is playing on. The &lt;level&gt; parameter is used for Voice A, B &amp; D - it sets the amplitude level below which HOLD mode is defeated. It give you greater control on how you allow the drum track to steal from the voice. To turn HOLD off completely, use HOLD OFF, though it is off by default when a new song is started.</p>
+  <p>This command will probably make more sense once you've read about the Drum Track.</p>
+  <p>(Bytes: 2)</p>
+  </div>
+<div class="sectionBreak"></div>
+<h2><a name="AudioEffects" id="AudioEffects"></a>Audio Effects</h2>
+<p>There are several audio effects that can be applied both in a Sequence or Track. The command and parameters are the same, wherever you use them. Whist you are free to setup the effects in either Sequence or Track, remember that Sequences are effectively nested inside tracks so if you setup one of the effects at Track level, then setup the same effect inside a Sequence played by that track, the command in the Sequnce will override the Track one. Where you set the effects is up to you, there are advantages and disadvantages to both.</p>
+<div class="InstrumentCommand">
+  <h3><a name="DT" id="DT"></a>DT</h3>
+  <p>Definition : set detune for sequence/track</p>
+  <p>Usage: <strong>DT</strong> &lt;offset&gt;</p>
+  <p>Off : <strong>DT 0</strong></p>
+  <p>Scope: Voices A, B &amp; C</p>
+  <p>Explanation: This command sets the detune value for the voice. The value, &lt;offset&gt; is added to the pitch of the output of the voice. The DT command affects all subsequent notes for the current sequence and all subsequent sequences until another DT command is encountered. Valid range for DT is -128 to 127.</p>
+  <p>(Bytes: 2)</p>
+  </div>
+
+<div class="InstrumentCommand">
+  <h3><a name="ECHO" id="ECHO"></a>ECHO</h3>
+  <p>Definition : set echo effect for sequence/track</p>
+  <p>Usage: <strong>ECHO</strong> &lt;delay&gt;,&lt;initial attenuation&gt;,&lt;attenuation per cycle&gt;,&lt;attenuation speed&gt;,&lt;duty setting&gt;</p>
+  <p>Off : <strong>ECHO_OFF</strong></p>
+  <p>Scope: Voices A, B &amp; D</p>
+  <p>Explanation: This command sets up a single voice echo for a sequence or track. First the simple explanation : &lt;delay&gt; sets the speed of the echo, &lt;initial attenuation&gt; is what is initially subtracted from the amplitude of the voice as it's captured to the echo buffer, &lt;attenuation per cycle&gt; is the number that is subtracted from the captured amplitude every cycle of the buffer (cycle time is determined by &lt;delay&gt;). &lt;attenuation speed&gt; is the number of buffer loops between each attenuation of the buffer amplitude and is used to slow the attenuation down (0 is normal). The &lt;duty setting&gt; applies to Voice A &amp; B and can be used to set the duty cycle of the echo.</p>
+  <p>Now the technical explanation. This is a slightly complicated one to explain so bear with me.</p>
+  <p>For voices A &amp; B there is a circular buffer that the audio output is written to constantly. The &lt;delay&gt; parameter sets the size of that buffer in frames. Currently the buffer sizes are limited to 144 bytes each and because on each frame the contents of the 3 hardware registers (only captures registers 0, 2 &amp; 3) are captured, this limits your maximum delay to 48 (144 / 3).</p>
+  <p>The pitch (registers 2 &amp; 3) is just captured straight to the buffer but the amplitude (register 0) has the &lt;initial attenuation&gt; parameter subtracted from it before writing the amplitude to the buffer.</p>
+  <p>The echo routine continues to capture data this way until it detects &quot;no activity&quot; on the voice. The way it detects &quot;no activity&quot; is by checking the current phase of the ADSR. If the phase is past the Sustain phase (so either in the Release phase or stopped completely i.e. no ouput), this triggers the output phase of the echo routine. Data will be fetched from the echo buffer and written back to the registers that it came from. As the amplitude is read and applied back to the voice, the &lt;attenuation per cycle&gt; parameter is subtracted from the amplitude in the buffer until it is eventually reduced to 0. The reduction in amplitude occurs once for every pass of the buffer so the reduction rate is determined also by &lt;delay&gt; parameter.</p>
+  <p>This continues until the amplitude of all the data in the buffer is 0 or until there is more activity on the voice (i.e. new note is triggered, causing the ADSR to start at the Attack phase again).</p>
+  <p>The &lt;duty setting&gt; can be either set to &quot;OFF&quot; (normal operation) or set to one of the duty settings (DUTY1, DUTY2, etc). This overrides the captured duty setting so that you can give your echo a slightly different sound to the original sound. You can give it a &quot;high pass&quot; sound by using DUTY1 or a &quot;low pass&quot; sound by using DUTY3 (square). It's a subjective effect, it's effectiveness depending on the material and your own preference.</p>
+  <p>Experimentation is the key here as the effectiveness of the effect depends on the source material. A few tips;</p>
+  <blockquote>
+    <p>1) Use the negative sustain feature in your instrument. If you've got a repeating phrase of notes that are 16 frames long, try setting your sustain to -8. This will then give the echo effect 8 frames of room in between your notes, whatever the length of the note.</p>
+    <p>2) If you want a longer ADSR on your notes but would like a splash of echo, say, at the end of a sequence of notes, throw a Rest command in at the end. This will force the ADSR into Release phase and trigger the echo playback which will have captured the last &lt;delay&gt; frames of your sequence.</p>
+    <p>3) You can have echo that never decays to 0. Just set &lt;attenuation per cycle&gt; to 0.</p>
+    <p>4) You can change the echo parameters (by inserting a new echo command) at any time in a sequence. While it should take care of itself eventually, increasing the buffer size while the echo is active may have some unwanted audio artefacts as the buffer itself is never cleared beyond initial song setup.</p>
+  </blockquote>
+  <p>(Bytes: 4)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="GT" id="GT"></a>GT</h3>
+    <p>Definition : set gated amplitude effect for sequence/track</p>
+  <p>Usage: <strong>GT</strong> &lt;pattern&gt;,&lt;speed&gt;,&lt;&quot;off&quot; amplitude&gt;,&lt;sync mode&gt;</p>
+  <p>Off : <strong>GT_OFF</strong> to turn the effect off.</p>
+  <p>Scope: Voices A, B, C &amp; D. With Voice C, the amplitude settings are irrelevant - the voice is simply on during the &quot;on&quot; phase and off during the &quot;off&quot; phase.</p>
+  <p>Explanation: The Gate effect uses simple patterns that define a &quot;gate&quot; through which the amplitude of the voice is processed. It tries to mimic a proper audio side-chain noise gate effect but using a step pattern to feed the side-chain instead of the output of another track. </p>
+  <p>If you just want to use it, &lt;pattern&gt; selects the pattern, &lt;speed&gt; sets the speed (in frames) to step through the pattern. &lt;&quot;off&quot; amplitude&gt; sets the amplitude for the phases where the gate is &quot;closed&quot; and &lt;sync mode&gt; is either SYNC_OFF or SYNC_ON.</p>
+  <p>Technical explanation time again, this one is probably worse than ECHO so brace yourself.</p>
+  <p>First off, look at the template song. Just below the instrument definitions you should see GATE_TABLE. This is another table of pointers, like the Instrument and Sequence tables. Below this you'll see a pattern definition, GATE0 and a list of numbers. A gate pattern is a list of number pairs.</p>
+  <pre>			db &lt;amplitude&gt;,&lt;frames to hold&gt;</pre>
+  <p>This is one &quot;step&quot; in the gate pattern. You can continue to add steps in this way, ending the pattern with the command;</p>
+  <pre>			db GATE_END,&lt;speed modulation&gt;</pre>
+  <p>The maximum size of a gate pattern is 255 bytes so given that there are 2 bytes per step, you have a maximum of 127 steps plus the GATE_END command which is two bytes also.</p>
+  <p>The two parameters &lt;amplitude&gt; and &lt;frames to hold&gt; define one &quot;step&quot; in the gate pattern. The &lt;pattern&gt; parameter in the GT command selects the pattern (the first one being #0, second one #1 etc.) The speed at which the echo command steps through the steps is the &lt;speed&gt; parameter. The Gate effect will step through the gate pattern until the GATE_END command is reached, at which point it will start at the beginning of the pattern again. You've probably spotted the &lt;speed modulation&gt; command. What this does is, at the point the gate pattern ends and loops back to the beginning, &lt;speed modulation&gt; is added to the &lt;speed&gt; value. This can be positive or negative and give you the option to accelerate or decelerate the gate pattern speed. It has limited use but can give you some pretty cool effects. Setting this to 0 keeps the speed constant.</p>
+  <p>So, what do the steps in the gate pattern do? You may have figured out that the &quot;length&quot; of a step i.e the number of frames in a step, is determined by the &lt;speed&gt; parameter in the GT command. So a &lt;speed&gt; setting of 8 will mean that each step in your gate pattern will last for 8 frames before moving onto the next. Each step consists of an &quot;open&quot; phase and a &quot;closed&quot; phase. The length of the open phase is determined by the &lt;frames to hold&gt; parameter in each step of your gate pattern. The closed phase length is determined by subtracting the &lt;frames to hold&gt; parameter from the &lt;speed&gt; setting in the command i.e whatever time is left in the step. This &quot;off time&quot; is calculated internally, it's not an option you set directly.</p>
+  <p>The two amplitude parameters, &lt;amplitude&gt; (in pattern) and &lt;&quot;off&quot; amplitude&gt; (in command), control the amplitude scaling during the two gate step phases. &lt;amplitude&gt; scales the voice output during the &quot;on&quot; phase, &lt;&quot;off&quot; amplitude&gt; scales the voice output during the &quot;off&quot; phase.</p>
+  <p>I think we might need a diagram!</p>
+  <div class="diagramBox"><img src="images/gate_pic.png" width="640" height="384" /></div>
+  <p>I'm sure that makes perfect sense now :)</p>
+  <p>The only remaining parameter to deal with is &lt;sync mode&gt;. The two options are SYNC_OFF and SYNC_ON. With SYNC_OFF, the echo step pattern is just freely cycled through until you stop it (GT_OFF). However, with SYNC_ON, each time a new note is triggered, the gate pattern step is reset to 0 i.e. starts at the beginning.</p>
+  <p>Epilogue : OK, on the face of it, it seems a complicated thing to use. In fact it's very simple: even the code is relatively simple. The keen observer might spot that it's effectively like a programmable duty cycle generator for the voice amplitude. The distribution of the controlling parameters between the actual command and the gate step pattern is one of flexibility. For example, putting the &lt;speed&gt; parameter in the command means that you can reuse the same gate step pattern, setting the &lt;speed&gt; command to suit your song/track/sequence. Likewise with specifying the &quot;off amplitude&quot; in the command parameters. This allows you to adjust the &lt;off amplitude&gt; based on the material in the voice that you're trying to gate. I wasn't going to have a &quot;on amplitude&quot; because I'd imagined for most of the time you'd want the voice output unscaled during the on phase but as a compromise I put it in the gate step table so at least, if you want to, you could define gate steps with a varying &quot;on amplitude&quot;. You could probably get some interesting effects, I haven't tried much yet. Interestingly, you could set up your gate pattern steps to have a smaller amplitude setting than the &quot;off amplitude&quot; in the command - effectively reversing the normal relationship between the on and off phases. Experiment!</p>
+  <p>The gate effect is one of those areas that I'm still not 100% satisfied with so I may mess around with it in later updates.</p>
+  <p>(Bytes: 4)</p>
+  </div>
+<div class="sectionBreak"></div>
+  <h2><a name="TheDrumTrack" id="TheDrumTrack"></a>The Drum Track</h2>
+  <p>I wasn't sure of the right point in the documentation to introduce this but here seems as good as any.</p>
+  <p>There are many similarities between other tracks and the Drum Track: you use sequences and arrange them into a track exactly the same. However, the sound synthesis for drums is very different than &quot;normal&quot; tracks.</p>
+  <p>If you look at the template file again, after the Instrument and Gate Pattern sections you'll see the Drums  section, &quot;DRUM_SOUNDS_TABLE&quot;. The format of the table should be familiar to you now. Below the table you'll find the definition of 3 drum sounds DRUM0, DRUM1 and DRUM2. These represent a drum rest (more on this in a minute), a simple kick drum and a simple snare drum.</p>
+  <p>The way the drum definitions work is by rendering a set of values to write to the hardware registers per frame for the duration of the drum. You can use all four voices in your drums. There are macro commands &amp; parameters to make this process more readable/editable.</p>
+  <h3><a name="DrumSoundMacroCommands" id="DrumSoundMacroCommands"></a>Drum Sound Macro Commands</h3>
+  <p>There are four Drum Sound Macros that tell the drum routine what values to set for each of the hardware voices.</p>
+<div class="InstrumentCommand">
+    <h3><a name="DRUMA" id="DRUMA"></a>DRUM_A</h3>
+    <p>Definition : set parameters for voice A in drum frame</p>
+    <p>Usage: DRUM_A &lt;pitch&gt;,&lt;amplitude&gt;,&lt;duty&gt;</p>
+  <p>This command tells the drum routine what values to write to Voice A for the current drum frame. &lt;pitch&gt; uses the same convetion as entering musical notes into a sequence, &lt;amplitude&gt; sets the amplitude (0 to 15) and &lt;duty&gt; sets the duty cycle. The duty is set directly, not via your Duty Table. You can use numbers ($00,$40,$80,$C0) or the labels as mentioned in the DCM command, DUTY0, DUTY1, DUTY2 and DUTY3.</p>
+    <p>(Bytes: 4)</p>
+  </div>
+  
+<div class="InstrumentCommand">
+  <h3><a name="DRUMB" id="DRUMB"></a>DRUM_B</h3>
+  <p>Definition : set parameters for voice B in drum frame</p>
+  <p>Usage: DRUM_B &lt;pitch&gt;,&lt;amplitude&gt;,&lt;duty&gt;</p>
+  <p>This command tells the drum routine what values to write to Voice B for the current drum frame. &lt;pitch&gt; uses the same convetion as entering musical notes into a sequence, &lt;amplitude&gt; sets the amplitude (0 to 15) and &lt;duty&gt; sets the duty cycle.The duty is set directly, not via your Duty Table. You can use numbers ($00,$40,$80,$C0) or the labels as mentioned in the DCM command, DUTY0, DUTY1, DUTY2 and DUTY3.</p>
+  <p>(Bytes: 4)</p>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="DRUMC" id="DRUMC"></a>DRUM_C</h3>
+  <p>Definition : set parameters for voice C in drum frame</p>
+  <p>Usage: DRUM_C &lt;pitch&gt;</p>
+  <p>This command tells the drum routine what values to write to Voice C for the current drum frame. &lt;pitch&gt; uses the same convetion as entering musical notes into a sequence. It's the only parameter as voice C has no amplitude or duty setting.</p>
+  <p>(Bytes: 2)</p>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="DRUMD" id="DRUMD"></a>DRUM_D</h3>
+  <p>Definition : set parameters for voice D in drum frame</p>
+  <p>Usage: DRUM_D &lt;pitch&gt;,&lt;amplitude&gt;</p>
+  <p>This command tells the drum routine what values to write to Voice D for the current drum frame. &lt;pitch&gt; uses the same convetion as entering musical notes into a sequence (Entering Musical Data : Voice D), &lt;amplitude&gt; sets the amplitude (0 to 15).</p>
+  <p>(Bytes: 3)</p>
+</div>
+<p>You can use as many or as few of these in your drum frames. In a frame where you don't want anything written to a particular voice, just leave out the DRUM_ command for that voice and whatever is playing &quot;underneath&quot; the drum on that voice will be heard again.</p>
+<p>There are two other commands that you need for a drum sound definition.</p>
+<div class="InstrumentCommand">
+  <h3><a name="DFE" id="DFE"></a>DFE</h3>
+  <p>Definition : tells Nijuu that you've finished defining a frame of the drum</p>
+  <p>Usage: DFE</p>
+  <p>As Nijuu processes your drum definition, it will work it's way through the data, writing values to registers (as defined by the DRUM_v commands) all in the current frame until it reaches a DFE command. This then completes one frame &quot;render&quot; of the drum sound.</p>
+  <p>(Bytes: 1)</p>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="DE" id="DE"></a>DE</h3>
+  <p>Definition : tells Nijuu that there are no more frames to render for this drum.</p>
+  <p>Usage: DE</p>
+  <p>When you have no more frames to enter in your drum definition you need to tell Nijuu. You do this with the DE command.</p>
+  <p>(Bytes: 1)</p>
+</div>
+<p>Putting all that together then, a typical drum definition might look like;</p>
+<pre>DRUM1		DRUM_C $20			;frame 0, set voice C pitch to $20
+		DRUM_D 5,8			;and voice D pitch to 12, amplitude 8
+		DFE				;end of frame 0
+		DRUM_C $18			;frame 1, set voice C pitch to $18, no setting for voice D
+		DFE				;end of frame 1
+		DRUM_C $14			;frame 2, set voice C pitch to $14
+		DFE				;end of frame 2
+		DE				;end of drum
+</pre>
+<p>From what you know you should be able to see that the drum sound lasts for 3 frames (0 to 2), sweeping the pitch from $20 down to $14 with a little bit of noise (voice D) on the first frame only.</p>
+<h3><a name="CreatingDrumSequence" id="CreatingDrumSequence"></a>Creating A Sequence For the Drum Track</h3>
+<p>Sequences for the Drum Track are defined in the same way as normal sequences: you define the sequence, give it a label and put that label in the SEQUENCE_TABLE. However, instead of notes, because there is no pitch information required to play a drum (it's all in the drum sound definition, apart from an exception that I'll mention later) you tell Nijuu which drum sound to play. Use the &quot;db&quot; command as you do in normal sequences;</p>
+<pre>			db 1,2,1,2</pre>
+<p>would play an alternating pattern between DRUM1 and DRUM2. Note you don't need to name your drums in the same was as the template file, name them how you like as long as you put that name into the DRUM_SOUND table.</p>
+<h3><a name="DrumSequenceNoteDuration" id="DrumSequenceNoteDuration"></a>Drum Sequence Note Duration</h3>
+<p>To set the duration that a drum plays for, use the D command same as normal sequences.</p>
+<h3><a name="DrumSequenceRest" id="DrumSequenceRest"></a>Drum Sequence Rest</h3>
+  <p>Remember further up when I said that the three drum definitions in the template file were for a drum &quot;rest&quot;, a kick sound and a snare sound? The reason that the drum sound &quot;DRUM0&quot; only has one entry (&quot;DE&quot;), is that you need to use the first drum in the DRUM_SOUNDS table as a &quot;rest&quot; as there is no R or RD command.</p>
+<pre>			D 16
+			db 1,0,0,0
+			ES</pre>
+<p>Would play DRUM1 followed by 3 DRUM0's, 16 frames each. Of course, you could also achieve the same sound by doing;</p>
+<pre>			D 48
+			db 1
+			ES</pre>
+<p>but I find often that it's handy to use the first way as you have more of a grid representation of what is programmed in the sequence.</p>
+<p>One thing to note though. In the first example, if your drum definition for DRUM1 was actually longer than 16 frames, say 32, when playback reaches the first &quot;0&quot;, the sound of DRUM1 will be truncated. This is not true of the second method.</p>
+<h3><a name="DrumSequenceCommands" id="DrumSequenceCommands"></a>Drum Sequence Commands</h3>
+<p>You may have already worked out that most of the Sequence Commands for normal sequences don't apply for a Drum Sequence. There are only couple of them that are relevant.</p>
+<p></p>
+<div class="InstrumentCommand">
+  <h3>Drum Sequence Commands</h3>
+  <p>D : to set the duration of drum &quot;notes&quot;</p>
+  <p>V : to set the velocity of drum &quot;notes&quot;</p>
+  <p>SR/ER : to define a looping section</p>
+  <p>ES : to define the end of the drum sequence</p>
+</div>
+<h3><a name="MoreOnDrums" id="MoreOnDrums"></a>More On Drums</h3>
+<p>In the flurry of information regarding the construction of drum sounds and creating sequences for the drum track, I completely forgot to talk about how the Drum Track actually works. Part of me thinks that either (a) you already know from previous NES audio experience or (b) you've worked it out from the information I've already given you. For completeness though, I ought to at least touch on the method.</p>
+<p>The Drum Track is a virtual track, in that it's not directly linked to a hardware voice unlike the tracks for Voice A, B, C &amp; D. The way it outputs sound is by hijacking the hardware voices for the duration of the drum sound definition. Which voices, and for how long, depends on how you define your drum sound. Once the drum sound has finished, whatever was orginally playing on the interrupted voices will be heard again, like nothing ever happened.</p>
+<p>Because of the nature of stealing from the hardware voices in this way, having drum sound definitions that are very long or drum sequences that are very busy, will mean that whatever is playing on the voices you are stealing from will be noticably disrupted. The key is subtlety, trying to balance interesting drum sounds and sequences with preserving what melody/accompaniment you have on the other tracks. Unless you want to go for a massively disrupted sound, of course. Nijuu gives you the flexibility to do either.</p>
+<p>You might remember the HOLD command from the Sequence Commands section. The HOLD command is a way of ring-fencing a particular sequence (or part of a sequence) to tell the Drum Track not to steal the hardware voice for a while. One way I made use of this in the first Nijuu test song was with the crash cymbal sound that was programmed on voice D. Without the HOLD command, because the drum track is playing at the same time as the crash cymbal sound, voice D would be getting interrupted so much that you lose the envelope shape of the sound and it sounded pretty bad. Therefore I stuck a HOLD command before the crash cymbal sound which stopped the drum sounds from stealing voice D while it played. However, the voice C components of the drums during this time were still free to steal from voice C, thus helping to maintain the illusion of the layered sound.</p>
+<p>As was mentioned in the &quot;ECHO&quot; command section, the drum track is not fed into the echo effect but this is something that is top of my to-do list, I just need to figure out a way to do it.</p>
+<div class="sectionBreak"></div>
+<h2><a name="Tracks" id="Tracks"></a>Tracks</h2>
+<p>OK, the final piece to the puzzle. If you've made it this far, well done, and thanks for taking the time to read everything. If there's one thing I've gained from writing all this it's definitely a deeper respect for good technical writers.
+<p>Tracks, then. To recap, in Nijuu, you define Instruments, then create Sequences of notes (and commands) to play sounds using those Instruments and finally you arrange those Sequences into Tracks.
+<p>Compared to the other topics, &quot;Tracks&quot; is relatively straight forward as there's nothing really complicated about them at all.
+<p>As with the other sections lets start by taking a look at the template song file.
+<p>Inbetween Instruments etc. and Sequences you'll see the pointer table &quot;TRACK_TABLE&quot; and again, same as the other pointer tables, it's a &quot;DW&quot; list of your Track addresses. Remember that I explained how every Nijuu song must have 5 tracks? That's why in the template song I've put the addresses for all 5 tracks on the one line. It helps to organise your track table so you can quickly see which tracks names belong to which song (i.e. the first set of 5 tracks belong to Song 0, the next 5 to Song 1 etc.).
+<h2><a name="ArrangingSequenceIntoTracks" id="ArrangingSequenceIntoTracks"></a>Arranging Your Sequences Into Tracks</h2>
+<p>To make a track play a sequence, simply use a &quot;db&quot; command to add the sequence number (remember, the number is determined by the sequence's position in the sequence table).</p>
+<pre>			db 1,2,3,4
+			db 10</pre>
+<p>would cause the track to play sequence 1 followed by 2, 3, 4 & 10.</p>
+<p>There are three ways to end a track: make it stop, have it loop infinitely or fade out the song. As there are Track Commands to handle those functions it's probably best to explain Track Commands first.</p>
+<h2><a name="TrackCommands" id="TrackCommands"></a>Track Commands</h2>
+<div class="InstrumentCommand">
+
+  <h3><a name="TV" id="TV"></a>TV</h3>
+  <p>Definition : sets the playback volume for the track</p>
+  <p>Usage : <strong>TV</strong> &lt;volume&gt;</p>
+  <p>Scope : Track A, B, D &amp; Drum Track</p>
+  <p><a name="AmplitudePathScale" id="AmplitudePathScale"></a>This is probably a good point to explain the flow of amplitude through Nijuu.</p>
+  <p>There are four stages in the output flow where the amplitude of the currently playing note is shaped or scaled. These are Note Velocity, ADSR, Gate Effect, Track Volume.</p>
+  <div class="diagramBox"><img src="images/amp_pic.png" /></div>
+  <p>Whatever level is generated by the ADSR (0 to 15) is scaled by the Velocity setting set in your sequence. The scaling is a simple look-up table that scales the ADSR ouput by n:15 where n is the Velocity. This is then fed into the Gate Effect, if active, where it is scaled (again at a rate of n:15) by the definition of your gate pattern. The output from this is then scaled once more (again, n:15) by the current Track Volume at which point the amplitude setting is written to the corresponding APU register.</p>
+  <p>(Bytes : 1)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="TR" id="TR"></a>TR</h3>
+  <p>Defintion : set the transpose value for the track.</p>
+  <p>Usage : <strong>TR</strong> &lt;transpose value&gt;</p>
+  <p>Scope : Track A, B, C, D &amp; a special case for the Drum Track, see below.</p>
+  <p>Explanation: This command cause all notes in all subsequent sequences in the track to be transposed by the specified value. The value can be positive or negative with a theoretical range of -128 to 127 though that's obviously far greater than practical.</p>
+  <h3><a name="DrumTrackTranspose" id="DrumTrackTranspose"></a>Drum Track &amp; Track Transpose Command</h3>
+  <p>Ordinarily, the pitch values you set in your drum sound definitions are not affected by the Track Transpose command, however I have programmed it so that if you use Voice A or B in your drum sounds, the pitch that is written to these two voices will be transposed. I did this for a very specific reason, something I made use of in the first Nijuu test song. I'll leave it up to you to decide a useful/creative use for it - I can't give EVERYTHING away now, can I?</p>
+  <p>(Bytes : 2)</p>
+</div>
+<div class="InstrumentCommand">
+  <h3><a name="ST" id="ST"></a>ST</h3>
+  <p>Definition : tells a track to stop playing</p>
+  <p>Usage : <strong>ST</strong></p>
+  <p>Scope : All tracks.</p>
+  <p>Explanation: This stops the current track. It will not restart until the song is reinitialised or a new song is selected (see Using Nijuu In Your Own Code).</p>
+  <p>(Bytes : 1)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="LP" id="LP"></a>LP</h3>
+  <p>Definition : tells the track to loop back to a particular point, the track loops infinitely.</p>
+  <p>Usage  : <strong>LP</strong> &lt;address/label to loop back to&gt;</p>
+  <p>Scope : All tracks</p>
+  <p>Explanation: This command will cause the current track to loop back to the address/label specified in the parameter. The loop is always infinite. If you want a finite looping section (with loop count) in your track, use the SR/ER command pair in exactly the same way you would in a sequence.</p>
+  <pre>Track04		TV 10
+  		TR 0
+            	db 1,2,1,2
+Track04_LP	db 3,4,3,4
+		LP Track04_LP</pre>
+  <p>This track has it's Track Volume set to 10, Transpose set to 0. Then it plays sequence 1, 2, 1 and 2 again. Then it plays sequence 3, 4, 3 and 4. Then the LP command makes the track jump back to the label &quot;Track04_LP&quot; and so will continue playing sequence 3, 4, 3 and 4 forever. If you want to loop the track back to it's beginning, just use the track label in the loop command. So in this case you would do &quot;LP Track04&quot;.</p>
+  <p>(Bytes : 3)</p>
+  </div>
+<div class="InstrumentCommand">
+  <h3><a name="FADE_OUT" id="FADE_OUT"></a>FADE_OUT</h3>
+  <p>Definition : tells a track to stop playing</p>
+  <p>Usage :<strong>FADE_OUT &lt;speed&gt;,&lt;voice C cutoff&gt;</strong></p>
+  <p>Scope : Any track.</p>
+  <p>Explanation: This command will cause the song to be faded out and eventually stopped (when the master volume reaches 0). The &lt;speed&gt; parameter is how many frames between decrementing the master volume (which starts at 15 when a song is started). The &lt;voice C cutoff&gt; parameter determines at which point during the fade Voice C is muted (being that it doesn't have amplitude setting).</p>
+  <p>You only need to issue this command on one of the 5 tracks as the fade is global (i.e. all tracks). The song <strong>will not restart</strong> once it is faded out.</p>
+  <p>Programming : while a song is playing, BIT-7 of the label &quot;SONG_NUMBER&quot; is clear. Once the fade-out is finished, BIT-7 of &quot;SONG_NUMBER&quot; will be set.</p>
+  <p>(Bytes : 3)</p>
+</div>
+  <div class="InstrumentCommand">
+  <h3><a name="TrackSequenceCommands" id="TrackSequenceCommands"></a>Track Commands That Have Already Been Covered</h3>
+  <p>There are several commands that can be used both in tracks and sequences. As we've already covered them in the Sequence Commands section there's no need to re-explain them but I'll list them here for reference.</p>
+  <h3>SR/ER</h3>
+  <p>Define a looping section in your track</p>
+  <h3>DT</h3>
+  <p>Sets the Detune amount for the track. Note that if you have any DT commands in your sequences they will override DT commands in your tracks that play them.</p>
+  <h3>ECHO</h3>
+  <p>Sets the echo effect for the track. Note that if you have any ECHO commands in your sequences they will override ECHO commands in your tracks that play them.</p>
+  <h3>GT</h3>
+  <p>Sets the Gate effect for the track. Note that if you have any GT commands in your sequences they will override GT commands in your tracks that play them</p>
+</div>
+<div class="sectionBreak"></div>
+<h2><a name="UsingNijuuInOwnCode" id="UsingNijuuInOwnCode"></a>Using Nijuu In Your Own Code</h2>
+<p>So far we've only covered what it takes to create and edit a song in Nijuu. If that's all you ever want to do and output single-song NSF files, you have all the information you'll ever need. However, if you want to use Nijuu and it's data in your own code there are a few more things you'll need to know.</p>
+<p>That will be coming in later updates to this document. However, if you look at the &quot;RESET.ASM&quot; file you shoud be able to figure it out for yourself.</p>
+<h3>ROM &amp; RAM Usage</h3>
+<p>Note : even though I'm supplying these figures for the initial V0.1 release, they should be taken with a pinch of salt as they are woefully wasteful and not optimised at all yet.</p>
+<p>By default, Nijuu resides from $8000 to $9900</p>
+<p>Zero-page : $D8-$FF</p>
+<p>Non zero-page RAM : $0480-$7FF</p>
+<p>CPU Usage : As the worst points, about 1/2 of the screen refresh time at the moment. As I've mentioned before, I will be doing an optimisation pass on Nijuu (probably several) but knowing how those things go I didn't want to delay the initial release anymore by breaking it all again. So with V0.1 you're getting Raw Nijuu :)</p>
+<div class="sectionBreak"></div>
+<h2><a name="History" id="History"></a>History</h2>
+<p>July 2009 - First release, Nijuu V0.1</p>
+<div class="sectionBreak"></div>
+<h2><a name="PlannedUpdates" id="PlannedUpdates"></a>Planned Updates</h2>
+<ul>
+  <li>Overall optimisation - on going.</li>
+  <li><s>Implement pitch bend (specify start and end note unlike Portamento which uses the last played note as a start point)</s>.</li>
+  <li>Tremolo effect.</li>
+  <li>Non-clicking vibrato trick.</li>
+  <li>Better arpeggio solution - not entirely happy with it currently.</li>
+  <li>Non-linear amplitude scaling.</li>
+  <li>Option to use hardware envelopes, especially for Voice D.</li>
+  <li><s>Echo effect for Voice D</s>.</li>
+  <li>DPCM Support - not planned at the moment.</li>
+  <li><s>Change pitch table to have 32 steps inbetween each note to enable &quot;even-tempered&quot; vibrato and pitch bend.</s></li>
+  </ul>
+<h2><a name="KnownIssues" id="PlannedUpdates2"></a>Known Issues</h2>
+<p>1) Combination of Arpeggio, Portamento/Pitch Bend and Legato mode sometimes produces rogue pitches so there's a temporary fix to stop this happening. The downside is that regardless of the Legato mode, the arpeggio counter/index will be reset each note which is often noticeable but not a major problem. I'm still trying to work out a proper fix for this - it's a horrible bit of code.</p>
+<p>2) Setting PLK with 0 pitch on Voice C seems to truncate the length of the notes. A bug that's crept in somewhere, not that you'd really bother doing this as you can't hear it anyway but it's a bug all the same.</p>
+<div class="sectionBreak"></div>
+</div>
+<h2><a name="APPENDIX" id="APPENDIX"></a>Appendix</h2>
+<p><strong><a name="MIDI2NIJ" id="MIDI2NIJ"></a>MIDI2NIJ</strong></p>
+<p>Included with Nijuu is a limited but useful command-line tool &quot;MIDI2NIJ&quot;. You can use it to turn a monophonic, single-track MIDI file into text that can be copied and pasted into you Nijuu song file as sequence data. It's pretty unsophisticated and you have to make sure your MIDI notes are quantised (both position and length) and do not overlap. It only converts notes and rests (and calculates the note/rest durations and converts them into appropriate &quot;D&quot; and &quot;RD&quot; etc. commands). All other data is ignored, including master track stuff like tempo etc. It outputs text to the screen from where you can copy-paste into your Nijuu song. Or pipe the output to a file if you prefer, though you'll have to do that yourself via whatever method your OS uses. It also optimises the output by being aware of each &quot;D&quot; (duration) command and so will only output as many as are necessary.</p>
+<p>I've tested it on my own system (which is a MacBook Pro running OSX) using &quot;Cubse 4 LE&quot;, &quot;Logic Pro&quot; and also &quot;Reaper&quot;. Cubase and Reaper are fairly well-behaved but I did find that Logic uses &quot;running status&quot; and also does that naughty trick of replacing &quot;note off&quot; commands with &quot;note on&quot; with zero velocity. I've put some code into the tool to handle these though it's impossible for me to test every eventuality. Of all three sequencing softwares that I tested, I'd recommend Cubase as it has a &quot;Limit Polyphony&quot; function that will ensure you have no overlapping notes. Pretty handy.</p>
+<p>I wouldn't recommend trying to do a whole song with it as, for starters, the resulting text data will be way too big for one Nijuu sequence. Just record small sections (remember: single-track, monophonic) - the data will be easier to manage.</p>
+<p>Usage: <strong>MIDI2NIJ [-i] [-s] [-n] [-v] [-p] &lt;input file&gt;</strong></p>
+<p>All [parameters] are optional. You don't need the square brackets [], parameters are separated by spaces and values follow directly after the parameter (with no spaces). </p>
+<p>-i is used to display some information about the MIDI file.</p>
+<p>-Sn Is used to set the duration scaling. By default, the tool is expecting a MIDI file of 960 ppqn resolution and the default scaling value is 240. MIDI2NIJ divides all the delta times for each MIDI event by this number before working out the note lengths.</p>
+<p>-Nn is used to define the length of a 16th note in frames (based on 60Hz timing). You can use any value you like but take care with odd numbers as 32nd notes will end up being fractional in length and, as that's not allowed in Nijuu, the tool will attempt some internal rounding though, mostly with decent results.</p>
+<p>-Vn Velocity output. By default, velocity information is ignored. However you can make the tool output velocity (V) commands to mimic the velocities in the MIDI file (though obviously with less granularity, being that Nijuu only has a velocity range of 0-15 whereas MIDI has a range of 0-127). The parameter for -V defines the tolerance of the difference between the velocities of two consecutive notes that forces a new &quot;V&quot; command to be output. The lower the number, the more V commands, essentially.</p>
+<p>-Pn sets the maximum number of notes that are ouput per text line. Just a formatting/clarity thing really. Default is 8.</p>
+<p>&lt;input file&gt; is a single-track, monophonic MIDI file.</p>
+<p>If you try to use it and you are getting problems, let me know and possibly send me the MIDI file your are trying to convert. Hopefully I'll be able to develop the tool further to make it more useful.</p>
+<p>I've included the source code (MIDI2NIJ_SRC.ZIP) so that you can recompile it for your own OS or if you want to alter it for your own use.</p>
+<p><strong>Tips</strong></p>
+<p>Something I tend to do is output a section of my NES song via the WAV output of Nestopia or Game Music Box. Then trim that into a loop using an audio editor and import it into my sequencer. Then use this as a backing loop while recording a section of the tune etc. Mute all the tracks apart from the tune and export as a MIDI file. Convert with MIDI2NIJ and copy-paste the text into my Nijuu song file.</p>
+<p>Another trick is to use a dummy note at the end of your MIDI data which will enable MIDI2NIJ calculate the length of the last note/rest correctly. You can then delete this note once you've pasted the output text into your Nijuu song.</p>
+<p>&nbsp;</p>
+<div class="sectionBreak"></div>
+<p></p>
+</body>
+</html>
