@@ -70,45 +70,58 @@ LoadPalettes:                  ;
   ; 2 | 0010 | 6 | 0110 | A | 1010 | E | 1110
   ; 3 | 0011 | 7 | 0111 | B | 1011 | F | 1111
 
-;; AND | To set individual bits to 0. 0->1=0 0->0=0 1->0=0 1->1=1
+;; AND | To set individual bits to 0.
 
+  ; 0 > 1 = 0 
+  ; 0 > 0 = 0 
+  ; 1 > 0 = 0 
+  ; 1 > 1 = 1
   LDA #%00110000               ; res | #$30
   AND #%01010000               ; res | #$10
   ;     00010000
   STA $00
 
-;; ORA | To set individual bits to 1. 0->1=1 0->0=0 1->0=1 1->1=1
+;; ORA | To set individual bits to 1.
 
+  ; 0 > 1 = 1 
+  ; 0 > 0 = 0 
+  ; 1 > 0 = 1 
+  ; 1 > 1 = 1
   LDA #%00110000               ; res | #$30
   ORA #%01010000               ; res | #$70
   ;     01110000
   STA $01
 
-;; EOR | To invert individual bits. 0->1=1 0->0=0 1->0=1 1->1=0
+;; EOR | To invert individual bits.
 
+  ; 0 > 1 = 1 
+  ; 0 > 0 = 0 
+  ; 1 > 0 = 1 
+  ; 1 > 1 = 0
   LDA #%00110000               ; res | #$30
   EOR #%01010000               ; res | #$60
   ;     01100000
   STA $02
 
-;; BIT | To test the state of bits in a byte.(TODO)
+;; To test the state of bits in a byte.(TODO)
 
   LDA #%00100001
-  BIT #%00100001
-  BEQ @isSet
+  AND #%00100000
+  BNE @isSet
   LDA #$00
   JMP @done
 @isSet:                        ; 
   LDA #$01
 @done:                         ; 
+  STA $03
+
+;; BIT | More masking
+
+  LDA #%00000011
   STA $10
-
-
- ; LDA #$08
- ; BIT FLAGS
- ; BNE Bit3IsSet
- ; BEQ Bit3isClear
-
+  AND #%00000010
+  STA $11
+  ;
 
 ;;
 
