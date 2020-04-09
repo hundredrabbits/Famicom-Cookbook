@@ -118,7 +118,7 @@ NMI:                           ;
 animate:                       ; 
   ; reg $10 position
   ; reg $11 direction
-@turn                          ; load pos, compare with min/max, flip sprite
+@flip                          ; load pos, compare with min/max, flip sprite
   LDA $10                      ; 
   CMP #$20                     ; min
   BEQ @flipright
@@ -136,10 +136,10 @@ animate:                       ;
   LDA $11                      ; load direction
   CMP #$01
   BEQ @inc
-@dec:                          ; 
+@movedec:                          ; 
   DEC $10
   JMP @done
-@inc:                          ; 
+@moveinc:                          ; 
   INC $10
 @done:                         ; 
   LDA $10                      ; load pos
