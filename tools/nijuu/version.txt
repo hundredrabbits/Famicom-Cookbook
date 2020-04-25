@@ -1,4 +1,0 @@
-Nijuu Version Information
--------------------------
-
-August 01 2009 - Initial release, V0.1b
